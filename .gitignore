@@ -131,6 +131,7 @@ env.bak/
 venv.bak/
 maya-venv/
 Playground.ipynb
+data/
 
 # Spyder project settings
 .spyderproject
