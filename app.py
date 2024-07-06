@@ -113,7 +113,7 @@ with col2:
 
 st.sidebar.header("🔍 About")
 st.sidebar.info(
-    "This app uses advanced AI techniques to generate high-quality multilingual datasets. "
+    "This app uses Aya-23 Model to generate high-quality multilingual datasets. "
     "Perfect for machine learning projects, localization efforts, and cross-lingual studies."
 )
 
