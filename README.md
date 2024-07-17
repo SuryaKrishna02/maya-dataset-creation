@@ -33,8 +33,8 @@ COHERE_API_KEY=<API_KEY>
 ```
 
 ## Execution
-Note: Currently, sample dataset of 100 rows are provided in `translation/data/blip_laion_cc_sbu_100.json`. You can use original version
-Move to the translation folder from root folder and run the script as follows:
+**Note:** Currently, sample dataset of 100 rows are provided in `translation/data/blip_laion_cc_sbu_100.json`. You can use original version<br>
+Change your working directory to the translation folder from root folder and run the script as follows:
 
 ```bash
 cd translation\
