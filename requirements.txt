@@ -1,3 +1,6 @@
+# use cupy-cuda11x instead if you have cuda 11.2 ~ 11.8
+cupy-cuda12x==13.2.0 
 cohere==5.5.8
-python-dotenv==1.0.1
 datasets==2.20.0
+ratelimit==2.2.1
+python-dotenv==1.0.1
