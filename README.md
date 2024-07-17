@@ -42,7 +42,7 @@ python run.py
 ```
 
 ## Contribution Guidelines
-Follow the discussion in `#maya-data-team` discord channel to understand the pending tasks.
+Follow the discussion in `#maya-dataset-team` discord channel to understand the pending tasks.
 1. View the Issues Tab for the tasks information.
 2. Clone the repository and create your seperate branch to work on the Issue.
 3. Once you have finished the task, you can raise PR from your branch to `main` by tagging the Issue.
