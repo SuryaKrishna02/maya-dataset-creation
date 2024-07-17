@@ -15,9 +15,10 @@ async def main():
     The main function that orchestrates the entire process of loading data,
     processing it in batches, and saving the results.
     """
-    input_file = 'blip_laion_cc_sbu_558k.json'
+    input_file = 'data/blip_laion_cc_sbu_100.json'
     output_file = 'hindi.json'
     csv_file = 'translations.csv'
+    batch_size = TRANSLATION_BATCH_SIZE
 
     data = load_json(input_file)
     total_count = len(data)
@@ -28,8 +29,6 @@ async def main():
         writer.writerow(['ID', 'GPT Value Original', 'GPT Value Modified'])
 
     co = cohere.AsyncClient(api_key=COHERE_API_KEY)
-
-    batch_size = TRANSLATION_BATCH_SIZE
 
     logging.basicConfig(filename='error_log.txt', level=logging.ERROR)
 
@@ -55,8 +54,6 @@ async def main():
 
         save_json(data, output_file)
         pbar.close()
-        if i > 20:
-            break
 
     print("Processing complete!")
 
