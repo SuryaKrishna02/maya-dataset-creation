@@ -1,12 +1,8 @@
 import sys
 sys.path.append("../")
 import cohere
-import os
-from utils.helpers import update_csv
-from utils.constants import MODEL_NAME
-from translation.prompts import HINDI_PROMPT
+from utils.constants import MODEL_NAME, COHERE_API_KEY
 from ratelimit import sleep_and_retry, limits
-from utils.constants import COHERE_API_KEY, TRANSLATION_BATCH_SIZE
 from utils.schemas import Prompt
 from transformers.models.cohere.tokenization_cohere_fast import CohereTokenizerFast
 import instructor
@@ -14,7 +10,6 @@ from pydantic import BaseModel, Field
 import evaluate
 from transformers import AutoTokenizer
 from datasets import load_dataset, Dataset, DatasetDict
-import re
 
 
 class LLMJudgeTranslationScore(BaseModel):
@@ -27,11 +22,11 @@ class LLMJudgeTranslationScore(BaseModel):
 @sleep_and_retry
 @limits(calls=10000, period=60)  # 10,000 calls per 1 minute according cohere production key documentation
 def llm_as_judge_translation_score(
+        instructor_client: instructor.client.Instructor,
         reference: str,
         prediction: str, 
         reference_lang: str,
         prediction_lang: str, 
-        model_id: str = "c4ai-aya-23"
     ) -> list[dict[str, int]]:
     """Sends a prompt to the Cohere API for scoring translations. Requires ISO language code for reference and prediction languages."""
     TRANSLATION_SCORING_PREAMBLE = Prompt(
@@ -43,22 +38,23 @@ def llm_as_judge_translation_score(
     - **Equivalence of Meaning**: How well does the translation convey the same meaning as the original text?
     - **Appropriate Wording**: How well does the translation use appropriate language and terminology?
     - **Fully Consistent**: How well does the translation maintain consistency with the original text?""",
-        message="""{message}"""
+        message="""Message from {reference_lang}: {reference}
+        Message to {prediction_lang}: {prediction}"""
     )
-    message = f"""Message from {reference_lang}: {reference}
-    Message to {prediction_lang}: {prediction}"""
     
-    COHERE_API_KEY = os.getenv("COHERE_API_KEY")
-    co = cohere.Client(api_key=COHERE_API_KEY)
-    client = instructor.from_cohere(co)
-    response = client.chat.completions.create(
+    response = instructor_client.chat.completions.create(
         response_model=LLMJudgeTranslationScore,
         messages=[
             {"role": "system", "content": TRANSLATION_SCORING_PREAMBLE.preamble},
-            {"role": "system", "content": TRANSLATION_SCORING_PREAMBLE.message.format(message=message)}
+            {"role": "system", "content": TRANSLATION_SCORING_PREAMBLE.message.format(
+                reference_lang=reference_lang,
+                reference=reference,
+                prediction_lang=prediction_lang,
+                prediction=prediction)}
         ],
-        model=model_id,
-        max_retries=3
+        model=MODEL_NAME,
+        max_retries=3,
+        temperature=0
     )
     return response
 
@@ -67,6 +63,28 @@ def compute_corpus_level_chrf(predictions, references, lowercase=False):
     chrf = evaluate.load("chrf")
     results = chrf.compute(predictions=predictions, references=references, word_order=2, lowercase=lowercase)
     return results
+
+
+def translate(
+    client: cohere.client.Client,
+    reference: str,
+    to_lang: str,
+):
+    """Translate text to a target language."""
+    TRANSLATION_PROMPT = Prompt(
+        preamble="""## Instructions
+        You are an expert in translations. Your job is to translate text into a given language.""",
+        message="""{reference}
+        Translate the above message into {to_lang}."""
+    )
+    response = client.chat(
+        chat_history=[
+            {"role": "SYSTEM", "message": TRANSLATION_PROMPT.preamble}
+        ],
+        message=TRANSLATION_PROMPT.message.format(reference=reference, to_lang=to_lang),
+        model=MODEL_NAME
+    )
+    return response
 
 
 def compute_sentence_level_chrf(predictions, references, lowercase=False):
@@ -95,7 +113,6 @@ def check_repeated_tokens(
 def run_validation(
     dataset : Dataset,
     model_id: str = "CohereForAI/aya-23-35B",
-    api_model_id: str = "c4ai-aya-23",
     do_repeated_tokens: bool = True,
     do_back_translate_chrf: bool = False,
     do_llm_judge_translation_score: bool = False, 
@@ -103,7 +120,14 @@ def run_validation(
     prediction_col_name: str  = ""
 ) -> dict:
     """Run validation on a dataset."""
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+    if do_repeated_tokens:
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+    
+    co = cohere.Client(api_key=COHERE_API_KEY)
+    if do_llm_judge_translation_score:
+        client = instructor.from_cohere(co)
+
     references = dataset[reference_col_name]
     predictions = dataset[prediction_col_name]
  
@@ -118,11 +142,14 @@ def run_validation(
             repeated = check_repeated_tokens(prediction, reference, tokenizer)
             repeated_tokens.append(repeated)
         if do_back_translate_chrf:
-            score = compute_sentence_level_chrf([prediction], [reference])
+            # for now all backtranslations are into english, add lang id later
+            response = translate(co, prediction, "en")
+            response = response.text
+            score = compute_sentence_level_chrf([response], [reference])
             score = score[0]['score']
             back_translate_chrf.append(score)
         if do_llm_judge_translation_score:
-            response = llm_as_judge_translation_score(reference, prediction, "en", "es", api_model_id)
+            response = llm_as_judge_translation_score(client, reference, prediction, "en", "es")
             llm_judge_equivalence_of_meaning.append(response.equivalence_of_meaning)
             llm_judge_appropriate_wording.append(response.appropriate_wording)
             llm_judge_fully_consistent.append(response.fully_consistent)
@@ -148,8 +175,8 @@ def flatten_conversations(example):
     hindi_turns = [conv['value'] for conv in example['conversations_hindi']]
     
     # Strip <image> tags
-    english_turns = [re.sub(r'<image>', '', turn) for turn in english_turns]
-    hindi_turns = [re.sub(r'<image>', '', turn) for turn in hindi_turns]
+    english_turns = [turn.replace('<image>', '') for turn in english_turns]
+    hindi_turns = [turn.replace('<image>', '') for turn in hindi_turns]
     
     # Join turns into a single string
     english_turns = '\n'.join(english_turns).strip('\n')
