@@ -9,3 +9,14 @@ sys.path.append("../")
 MODEL_NAME = "c4ai-aya-23"
 TRANSLATION_BATCH_SIZE = 10 # Maximum is 165
 COHERE_API_KEY = environ.get("COHERE_API_KEY")
+ISO_639_1_CODES = {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "nl": "Dutch",
+    "pt": "Portuguese",
+    "hi": "Hindi",
+    "ru": "Russian"
+}

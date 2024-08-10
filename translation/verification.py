@@ -1,7 +1,7 @@
 import sys
 sys.path.append("../")
 import cohere
-from utils.constants import MODEL_NAME, COHERE_API_KEY
+from utils.constants import MODEL_NAME, COHERE_API_KEY, ISO_639_1_CODES
 from ratelimit import sleep_and_retry, limits
 from utils.schemas import Prompt
 from transformers.models.cohere.tokenization_cohere_fast import CohereTokenizerFast
@@ -143,7 +143,8 @@ def run_validation(
             repeated_tokens.append(repeated)
         if do_back_translate_chrf:
             # for now all backtranslations are into english, add lang id later
-            response = translate(co, prediction, "en")
+            LANG_VERBOSE = ISO_639_1_CODES["en"]
+            response = translate(co, prediction, LANG_VERBOSE)
             response = response.text
             score = compute_sentence_level_chrf([response], [reference])
             score = score[0]['score']
