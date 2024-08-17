@@ -104,7 +104,7 @@ def process_prompts(base_path, eval_data, prompt_list):
       
       pair_list = build_subset(eval_data, lang)
       print(f"Generating report for 'prompt_{i} {lang} '...")
-      eval_list = evaluate(lang, base_path, pair_list[:2], prompt)
+      eval_list = evaluate(lang, base_path, pair_list, prompt)
       for row in eval_list:
         if len(row) != 4:
             raise ValueError("Each row must contain exactly 4 elements.")
