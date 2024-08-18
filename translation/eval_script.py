@@ -1,22 +1,16 @@
 from dataclasses import dataclass
-
-from typing import List
+from utils.constants import MODEL_NAME, COHERE_API_KEY
 from nltk.translate.bleu_score import sentence_bleu
 import ast
 import argparse
-import sys
 import cohere
 import csv
-import json
-import random
-import numpy as np
 
 @dataclass
 class Prompt:
     translate_to: str
     preamble: str
-    message: str
-
+    message: str 
 
 
 def check_prompt(prompt):
@@ -39,7 +33,7 @@ def check_prompt(prompt):
 
 
 
-def build_subset(csv_file, lang):
+def build_subset(csv_file: str, lang: str)-> list:
   pair_list =[]
   with open(csv_file, mode='r') as file:
     reader = csv.DictReader(file)
@@ -49,22 +43,23 @@ def build_subset(csv_file, lang):
         pair_list.append(pair)
   return pair_list
 
-def fetch_translation_by_aya(input_text, prompt):
-  co = cohere.Client("API KEY")
+def fetch_translation_by_aya(input_text: str, prompt: Prompt) -> str:
+  co = cohere.Client(api_key=COHERE_API_KEY)
   message = f"Input: {input_text}"
   preamble = prompt.preamble
   response = co.chat(
+    model = MODEL_NAME,
     message=message,
     preamble = preamble
   )
   return response.text
 
-def calculate_bleu(ground_truth, hypothesis):
+def calculate_bleu(ground_truth: str, hypothesis: str):
     ground_truth_tokens = ground_truth.split()
     hypothesis_tokens = hypothesis.split()
     return sentence_bleu([ground_truth_tokens], hypothesis_tokens)
 
-def evaluate(lang, base_path, pair_list, prompt):
+def evaluate(lang: str, pair_list: list, prompt: Prompt) -> list:
   eval_list = [['English', 'Ground_truth', 'Aya_output', 'Bleu_score']]
   for pair in pair_list:
     english_sentence = pair[0]
@@ -77,7 +72,10 @@ def evaluate(lang, base_path, pair_list, prompt):
 
 
 
-def create_prompt(strings: List[str]) -> Prompt:
+def create_prompt(strings: list[str]) -> Prompt:
+    """
+    Processes raw input prompts and creates instances of the `Prompt` class.
+    """
     if len(strings) != 3:
         raise ValueError("List must contain exactly three elements: [translate_to, preamble, message]")
     
@@ -85,12 +83,15 @@ def create_prompt(strings: List[str]) -> Prompt:
     return Prompt(translate_to=translate_to, preamble=preamble, message=message)
 
 
-def process_prompts(base_path, eval_data, prompt_list):
+def process_prompts(base_path: str, eval_data: str, prompt_list: list[list[str]]):
   """
   Processes the specified prompts, checks their structure, and runs the report generation.
 
   Parameters:
-  prompt_names (List[str]): List of prompt names to be processed.
+  base_path: Path of directory to store reports
+  eval_data: path to evaluation dataset
+  prompt_list: List of raw prompts to be processed. Raw prompts are lists of size 3
+  containing the translate_to, premable and message values. 
   Returns:
   None
   """
@@ -104,7 +105,7 @@ def process_prompts(base_path, eval_data, prompt_list):
       
       pair_list = build_subset(eval_data, lang)
       print(f"Generating report for 'prompt_{i} {lang} '...")
-      eval_list = evaluate(lang, base_path, pair_list, prompt)
+      eval_list = evaluate(lang, pair_list, prompt)
       for row in eval_list:
         if len(row) != 4:
             raise ValueError("Each row must contain exactly 4 elements.")
@@ -116,6 +117,11 @@ def process_prompts(base_path, eval_data, prompt_list):
 
 def main():
   def extract_list_of_lists(file_path):
+      """
+      Parameters:
+      file_path - Path to .txt file that has list of raw prompts to be processed.
+      Eg: [['Hindi', 'Translate', 'Input'], ['Spanish', 'Translate to Spanish', 'Input Text']]
+      """
     with open(file_path, 'r') as file:
         # Read the content of the file
         content = file.read()
