@@ -122,13 +122,13 @@ def main():
       file_path - Path to .txt file that has list of raw prompts to be processed.
       Eg: [['Hindi', 'Translate', 'Input'], ['Spanish', 'Translate to Spanish', 'Input Text']]
       """
-    with open(file_path, 'r') as file:
-        # Read the content of the file
-        content = file.read()
-        
-        # Safely evaluate the content to a Python object (list of lists)
-        list_of_lists = ast.literal_eval(content)
-        return list_of_lists
+      with open(file_path, 'r') as file:
+          # Read the content of the file
+          content = file.read()
+          
+          # Safely evaluate the content to a Python object (list of lists)
+          list_of_lists = ast.literal_eval(content)
+      return list_of_lists
   parser = argparse.ArgumentParser(description="Generate evaluation reports for different set of language prompts")
   parser.add_argument('base_path', type=str, help="Directory path to save the generated reports.")
   parser.add_argument('eval_csv', type=str, help="Path to the evaluation dataset CSV file containing english sentences and their translations in other languages.")
