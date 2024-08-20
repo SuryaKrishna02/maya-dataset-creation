@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../")
 from dataclasses import dataclass
 from utils.constants import MODEL_NAME, COHERE_API_KEY
 from nltk.translate.bleu_score import sentence_bleu
