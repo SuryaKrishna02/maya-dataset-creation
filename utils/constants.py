@@ -18,5 +18,10 @@ ISO_639_1_CODES = {
     "nl": "Dutch",
     "pt": "Portuguese",
     "hi": "Hindi",
-    "ru": "Russian"
+    "ru": "Russian",
+    "ar": "Arabic",
+    "zh": "Chinese",
+    "ja": "Japanese"
 }
+API_CALLS_PER_MINUTE = 10_000
+API_CALLS_TIME_PERIOD = 60
