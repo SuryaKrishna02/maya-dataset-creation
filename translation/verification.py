@@ -11,60 +11,12 @@ import evaluate
 from transformers import AutoTokenizer
 from datasets import load_dataset, Dataset, DatasetDict
 
-from langdetect import detect
 from collections import defaultdict
 from datasets import Dataset
 from tqdm import tqdm
 import os
 import asyncio
 from tqdm.asyncio import tqdm_asyncio
-
-
-class LLMJudgeTranslationScore(BaseModel):
-    """A Pydantic model for the response of the LLM judge translation scoring task."""
-    equivalence_of_meaning: int = Field(None, ge=1, le=5)
-    appropriate_wording: int = Field(None, ge=1, le=5)
-    fully_consistent: int = Field(None, ge=1, le=5)
-
-
-@sleep_and_retry
-@limits(calls=API_CALLS_PER_MINUTE, period=API_CALLS_TIME_PERIOD)  # 10,000 calls per 1 minute according cohere production key documentation
-def llm_as_judge_translation_score(
-        instructor_client: instructor.client.Instructor,
-        reference: str,
-        prediction: str, 
-        reference_lang: str,
-        prediction_lang: str, 
-    ) -> list[dict[str, int]]:
-    """Sends a prompt to the Cohere API for scoring translations. Requires ISO language code for reference and prediction languages."""
-    TRANSLATION_SCORING_PREAMBLE = Prompt(
-        preamble="""## Instructions
-    You are an expert in translations. Your job is to score translations based on three criteria: equivalence of meaning, appropriate wording, and fully consistent.
-
-    For each of these criteria, assign a score from 1 to 5, where 1 is the lowest and 5 is the highest.
-
-    - **Equivalence of Meaning**: How well does the translation convey the same meaning as the original text?
-    - **Appropriate Wording**: How well does the translation use appropriate language and terminology?
-    - **Fully Consistent**: How well does the translation maintain consistency with the original text?""",
-        message="""Message from {reference_lang}: {reference}
-        Message to {prediction_lang}: {prediction}"""
-    )
-    
-    response = instructor_client.chat.completions.create(
-        response_model=LLMJudgeTranslationScore,
-        messages=[
-            {"role": "system", "content": TRANSLATION_SCORING_PREAMBLE.preamble},
-            {"role": "system", "content": TRANSLATION_SCORING_PREAMBLE.message.format(
-                reference_lang=reference_lang,
-                reference=reference,
-                prediction_lang=prediction_lang,
-                prediction=prediction)}
-        ],
-        model=MODEL_NAME,
-        max_retries=3,
-        temperature=0
-    )
-    return response
 
 
 def compute_corpus_level_chrf(predictions, references, lowercase=False):
@@ -102,13 +54,10 @@ async def fetch_all_translations(
     to_lang: str,
 ):
     """Fetch translations for a list of references."""
-    # translations = []
     tasks = []
     for reference in references:
         tasks.append(translate(client, reference, to_lang))
-        # response = await translate(client, reference, to_lang)
     translations = await tqdm_asyncio.gather(*tasks)
-        # translations.append(response.text)
     return translations
 
 
@@ -133,7 +82,6 @@ def check_repeated_tokens(
         # if two consecutive tokens are identical and are in not in the original text
         # ie: are not two spaces or newlines, then return true
         if prediction_tokens[i] == prediction_tokens[i + 1] and\
-            prediction_tokens[i+1] == prediction_tokens[i+1] and\
             prediction_tokens[i] not in reference_tokens:
             return True
     return False
@@ -164,20 +112,6 @@ def flatten_conversations(example):
         'id': example['id'],
         'conversations': turns 
     }
-
-
-def get_lang(example):
-    try:
-        return detect(example['conversations'])
-    except:
-        return None
-    
-
-def is_english(example):
-    try:
-        return detect(example['conversations']) == 'en'
-    except:
-        return False
 
 
 def find_english_texts(examples):
@@ -233,7 +167,6 @@ def run_validation(
     model_id: str = "CohereForAI/aya-23-35B",
     do_repeated_tokens: bool = True,
     do_back_translate_chrf: bool = False,
-    do_llm_judge_translation_score: bool = False, 
     reference_col_name: str = "",
     prediction_col_name: str  = "",
     back_translation_col: str = ""
@@ -243,19 +176,12 @@ def run_validation(
     if do_repeated_tokens:
         tokenizer = AutoTokenizer.from_pretrained(model_id)
     
-    co = cohere.Client(api_key=COHERE_API_KEY)
-    if do_llm_judge_translation_score:
-        client = instructor.from_cohere(co)
-
     references = dataset[reference_col_name]
     predictions = dataset[prediction_col_name]
     back_translations = dataset[back_translation_col]
 
     repeated_tokens = []
     back_translate_chrf = []
-    llm_judge_equivalence_of_meaning = []
-    llm_judge_appropriate_wording = []
-    llm_judge_fully_consistent = []
     for reference, prediction, back_translation in tqdm(zip(references, predictions, back_translations)):
         if do_repeated_tokens:
             repeated = check_repeated_tokens(prediction, reference, tokenizer)
@@ -264,18 +190,10 @@ def run_validation(
             score = compute_sentence_level_chrf([back_translation], [reference])
             score = score[0]['score']
             back_translate_chrf.append(score)
-        if do_llm_judge_translation_score:
-            response = llm_as_judge_translation_score(client, reference, prediction, "en", "es")
-            llm_judge_equivalence_of_meaning.append(response.equivalence_of_meaning)
-            llm_judge_appropriate_wording.append(response.appropriate_wording)
-            llm_judge_fully_consistent.append(response.fully_consistent)
-
+    
     results = {
         "repeated_tokens": repeated_tokens,
-        "back_translate_chrf": back_translate_chrf, 
-        "llm_judge_equivalence_of_meaning": llm_judge_equivalence_of_meaning,
-        "llm_judge_appropriate_wording": llm_judge_appropriate_wording,
-        "llm_judge_fully_consistent": llm_judge_fully_consistent
+        "back_translate_chrf": back_translate_chrf
     }
     return results
     
@@ -311,14 +229,13 @@ async def main():
         transformed_dataset[split] = transformed_dataset[split].filter(lambda example: not example['language'] == 'en')  
 
     ## TMP --  backtranslate
-    LANG_TO_BACKTRANSLATE = ...
+    LANG_TO_BACKTRANSLATE = "ar" 
 
     transformed_dataset['train'] = transformed_dataset['train'].filter(lambda example: example['language']==LANG_TO_BACKTRANSLATE)
 
     # tests to run
     repeated_tokens = False
     back_translate_chrf = True
-    llm_judge_translation_score = False
 
     # backtranslate
     if back_translate_chrf:
@@ -333,7 +250,7 @@ async def main():
             all_results = []
             for chunk in reference_chunks:
                 results = await fetch_all_translations(co, chunk, LANG_VERBOSE)
-                results = [result.text for result in results]
+                results = [result.text if type(result) is not Exception else "" for result in results]
                 all_results.extend(results) 
 
             transformed_dataset['train'] = transformed_dataset['train'].add_column(
@@ -346,42 +263,27 @@ async def main():
     # # tmp for testing
     # # transformed_dataset['train'] = transformed_dataset['train'].select(range(50))
     
-    # results_train = run_validation(
-    #     dataset=transformed_dataset['train'],
-    #     model_id="CohereForAI/aya-23-35B",
-    #     do_repeated_tokens=repeated_tokens,
-    #     do_back_translate_chrf=back_translate_chrf,
-    #     do_llm_judge_translation_score=llm_judge_translation_score,
-    #     reference_col_name="reference_text",
-    #     prediction_col_name="conversations",
-    #     back_translation_col="back_translations"
-    # )
+    results_train = run_validation(
+        dataset=transformed_dataset['train'],
+        model_id="CohereForAI/aya-23-35B",
+        do_repeated_tokens=repeated_tokens,
+        do_back_translate_chrf=back_translate_chrf,
+        reference_col_name="reference_text",
+        prediction_col_name="conversations",
+        back_translation_col="back_translations"
+    )
 
-    # for split in transformed_dataset.keys():
-    #     if repeated_tokens:
-    #         transformed_dataset[split] = transformed_dataset[split].add_column(
-    #             "repeated_tokens", 
-    #             results_train['repeated_tokens']
-    #         )
-    #     if back_translate_chrf:
-    #         transformed_dataset[split] = transformed_dataset[split].add_column(
-    #             "back_translate_chrf", 
-    #             results_train['back_translate_chrf']
-    #         )
-    #     if llm_judge_translation_score:
-    #         transformed_dataset[split] = transformed_dataset[split].add_column(
-    #             "llm_judge_equivalence_of_meaning",
-    #               results_train['llm_judge_equivalence_of_meaning']
-    #         )
-    #         transformed_dataset[split] = transformed_dataset[split].add_column(
-    #             "llm_judge_appropriate_wording",
-    #             results_train['llm_judge_appropriate_wording']
-    #         )    
-    
-    #         transformed_dataset[split] = transformed_dataset[split].add_column(
-    #             "llm_judge_fully_consistent",
-    #             results_train['llm_judge_fully_consistent']
-    #         )
+    for split in transformed_dataset.keys():
+        if repeated_tokens:
+            transformed_dataset[split] = transformed_dataset[split].add_column(
+                "repeated_tokens", 
+                results_train['repeated_tokens']
+            )
+        if back_translate_chrf:
+            transformed_dataset[split] = transformed_dataset[split].add_column(
+                "back_translate_chrf", 
+                results_train['back_translate_chrf']
+            )
 
 
 ### Sample run
