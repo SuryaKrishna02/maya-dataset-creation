@@ -28,7 +28,7 @@ def compute_corpus_level_chrf(predictions, references, lowercase=False):
 @sleep_and_retry
 @limits(calls=API_CALLS_PER_MINUTE, period=API_CALLS_TIME_PERIOD)  # 10,000 calls per 1 minute according cohere production key documentation
 async def translate(
-    client: cohere.client.Client,
+    client: cohere.AsyncClient,
     reference: str,
     to_lang: str,
 ):
@@ -39,26 +39,79 @@ async def translate(
         message="""{reference}
         Translate the above message into {to_lang}."""
     )
-    response = client.chat(
-        chat_history=[
-            {"role": "SYSTEM", "message": TRANSLATION_PROMPT.preamble}
-        ],
-        message=TRANSLATION_PROMPT.message.format(reference=reference, to_lang=to_lang),
-        model=MODEL_NAME
-    )
-    return response
+    try:
+        response = await client.chat(
+            chat_history=[
+                {"role": "SYSTEM", "message": TRANSLATION_PROMPT.preamble}
+            ],
+            message=TRANSLATION_PROMPT.message.format(reference=reference, to_lang=to_lang),
+            model=MODEL_NAME
+        )
+        return response
+    except Exception as e:
+        return e 
 
+
+@sleep_and_retry
+@limits(calls=API_CALLS_PER_MINUTE, period=API_CALLS_TIME_PERIOD)  # 10,000 calls per 1 minute according cohere production key documentation
+async def translate(
+    client: cohere.AsyncClient,
+    reference: str,
+    to_lang: str,
+):
+    """Translate text to a target language."""
+    TRANSLATION_PROMPT = Prompt(
+        preamble="""## Instructions
+        You are an expert in translations. Your job is to translate text into a given language.""",
+        message="""{reference}
+        Translate the above message into {to_lang}."""
+    )
+    try:
+        response = await client.chat(
+            chat_history=[
+                {"role": "SYSTEM", "message": TRANSLATION_PROMPT.preamble}
+            ],
+            message=TRANSLATION_PROMPT.message.format(reference=reference, to_lang=to_lang),
+            model=MODEL_NAME
+        )
+        return response
+    except Exception as e:
+        return e 
 async def fetch_all_translations(
-    client: cohere.client.Client,
+    client: cohere.AsyncClient,
     references: list[str],
     to_lang: str,
 ):
     """Fetch translations for a list of references."""
-    tasks = []
-    for reference in references:
-        tasks.append(translate(client, reference, to_lang))
+    
+    # async def safe_translate(client, reference, to_lang):
+    #     try:
+    #         return await translate(client, reference, to_lang)
+    #     except cohere.CohereError as e: 
+    #         return "" 
+
+    tasks = [translate(client, reference, to_lang) for reference in references]
     translations = await tqdm_asyncio.gather(*tasks)
-    return translations
+    translation_str = []
+    for translation in translations:
+        try:
+            txt = translation.text 
+        except:
+            txt = ""
+        translation_str.append(txt)
+    return translation_str 
+
+# async def fetch_all_translations(
+#     client: cohere.client.Client,
+#     references: list[str],
+#     to_lang: str,
+# ):
+#     """Fetch translations for a list of references."""
+#     tasks = []
+#     for reference in references:
+#         tasks.append(translate(client, reference, to_lang))
+#         translations = await tqdm_asyncio.gather(*tasks)
+#     return translations
 
 
 def compute_sentence_level_chrf(predictions, references, lowercase=False):
@@ -240,17 +293,17 @@ async def main():
     # backtranslate
     if back_translate_chrf:
         if "back_translations" not in transformed_dataset['train'].column_names:
-            co = cohere.Client(api_key=COHERE_API_KEY)
+            co = cohere.AsyncClient(api_key=COHERE_API_KEY)
             # for now all backtranslations are into english, add lang id later
             LANG_VERBOSE = ISO_639_1_CODES["en"]
             # do back translation
             references = transformed_dataset['train']["reference_text"]
 
-            reference_chunks = [references[i:i+API_CALLS_PER_MINUTE] for i in range(0, len(references), API_CALLS_PER_MINUTE)]
+            size_of_chunk = 160
+            reference_chunks = [references[i:i+size_of_chunk] for i in range(0, len(references), size_of_chunk)]
             all_results = []
             for chunk in reference_chunks:
                 results = await fetch_all_translations(co, chunk, LANG_VERBOSE)
-                results = [result.text if type(result) is not Exception else "" for result in results]
                 all_results.extend(results) 
 
             transformed_dataset['train'] = transformed_dataset['train'].add_column(
