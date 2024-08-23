@@ -308,7 +308,7 @@ async def main():
 
             transformed_dataset['train'] = transformed_dataset['train'].add_column(
                 "back_translations",
-                results
+                all_results
             )
             # Save to upload later
             transformed_dataset['train'].save_to_disk(f'validation_results_back_translate_lang_{LANG_TO_BACKTRANSLATE}')
