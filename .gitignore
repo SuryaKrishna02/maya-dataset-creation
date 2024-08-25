@@ -132,6 +132,7 @@ venv.bak/
 maya-venv/
 Playground.ipynb
 dataset/
+images-dataset/
 
 # Spyder project settings
 .spyderproject
