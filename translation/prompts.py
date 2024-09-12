@@ -41,3 +41,226 @@ HINDI_PROMPT = Prompt(
             """,
     message="""{message}"""
 )
+
+
+ARABIC_TRANSLATION_PROMPT = Prompt(
+    preamble="""## Instructions 
+    You are an expert in translations. Your job is to translate text into a given language.
+    Translate the message into English.
+    
+    # NOTE: 
+    Always make sure to only return the English translation and nothing else. The output must be only expected output always.
+
+    ## Examples
+
+    ### Example 1
+    Input:       
+    اختر مرتبة إضافية من رغوة الذاكرة جل المريحة الفاخرة بعرض 3 بوصات
+    Expected Output:
+    select luxury furniture 3 - inch gel memory foam mattress topper
+
+    ### Example 2
+    Input:
+    اشتر قميصًا قطنيًا أزرق للرجال
+    Expected Output:
+    buy blue cotton shirt for men
+
+    ### Example 3
+    Input:
+    اطلب بيتزا بيبروني بحجم متوسط
+    Expected Output:
+    order a medium-sized pepperoni pizza
+    """,
+    message="""{reference}"""
+)
+
+
+CHINESE_TRANSLATION_PROMPT = Prompt(
+    preamble="""## Instructions 
+    You are an expert in translations. Your job is to translate text into a given language.
+    Translate the message into English.
+    
+    # NOTE: 
+    Always make sure to only return the English translation and nothing else. The output must be only expected output always.
+
+    ## Examples
+
+    ### Example 1
+    Input:       
+    选择豪华家具 3 英寸凝胶记忆海绵床垫套
+    Expected Output:
+    select luxury furniture 3 - inch gel memory foam mattress topper
+
+    ### Example 2
+    Input:
+    为男性购买蓝色棉衬衫
+    Expected Output:
+    buy blue cotton shirt for men
+
+    ### Example 3
+    Input:
+    订购一个中号香肠披萨
+    Expected Output:
+    order a medium-sized pepperoni pizza
+    """,
+    message="""{reference}"""
+)
+
+
+FRENCH_TRANSLATION_PROMPT = Prompt(
+    preamble="""## Instructions 
+    Translate the message into English.
+        
+    # NOTE: 
+    Always make sure to only return the English translation and nothing else. The output must be only expected output always.
+
+    ## Examples
+
+    ### Example 1
+    Input:       
+    sélectionnez un surmatelas en mousse à mémoire de forme luxueux de 3 pouces
+    Expected Output:
+    select luxury furniture 3 - inch gel memory foam mattress topper
+
+    ### Example 2
+    Input:
+    achetez une chemise en coton bleu pour hommes
+    Expected Output:
+    buy blue cotton shirt for men
+
+    ### Example 3
+    Input:
+    commandez une pizza pepperoni de taille moyenne
+    Expected Output:
+    order a medium-sized pepperoni pizza
+    """,
+    message="""{reference}"""
+)
+
+
+HINDI_TRANSLATION_PROMPT = Prompt(
+    preamble="""## Instructions 
+    You are an expert in translations. Your job is to translate text into a given language.
+    Translate the message into English.
+    
+    # NOTE: 
+    Always make sure to only return the English translation and nothing else. The output must be only expected output always.
+
+    ## Examples
+
+    ### Example 1
+    Input:       
+    लक्जरी फर्नीचर 3-इंच जेल मेमोरी फोम गद्दा टॉपर चुनें
+    Expected Output:
+    select luxury furniture 3 - inch gel memory foam mattress topper
+
+    ### Example 2
+    Input:
+    पुरुषों के लिए नीली कॉटन शर्ट खरीदें
+    Expected Output:
+    buy blue cotton shirt for men
+
+    ### Example 3
+    Input:
+    मीडियम साइज पेपरोनी पिज्जा ऑर्डर करें 
+    Expected Output:
+    order a medium-sized pepperoni pizza
+    """,
+    message="""{reference}"""
+)
+
+
+JAPANESE_TRANSLATION_PROMPT = Prompt(
+    preamble="""## Instructions 
+    You are an expert in translations. Your job is to translate text into a given language.
+    Translate the message into English.
+    
+    # NOTE: 
+    Always make sure to only return the English translation and nothing else. The output must be only expected output always.
+
+    ## Examples
+
+    ### Example 1
+    Input:       
+    高級家具を選択 3 インチのジェルメモリーフォームマットレストッパー
+    Expected Output:
+    select luxury furniture 3 - inch gel memory foam mattress topper
+
+    ### Example 2
+    Input:
+    男性用の青い綿シャツを購入する
+    Expected Output:
+    buy blue cotton shirt for men
+
+    ### Example 3
+    Input:
+    中サイズのペパロニピザを注文する 
+    Expected Output:
+    order a medium-sized pepperoni pizza
+    """,
+    message="""{reference}"""
+)
+
+
+RUSSIAN_TRANSLATION_PROMPT = Prompt(
+    preamble="""## Instructions 
+    You are an expert in translations. Your job is to translate text into a given language.
+    Translate the message into English.
+    
+    # NOTE: 
+    Always make sure to only return the English translation and nothing else. The output must be only expected output always.
+
+    ## Examples
+
+    ### Example 1
+    Input: 
+    select luxury furniture 3 - inch gel memory foam mattress topper
+    Expected Output:
+    выберите роскошную мебель 3-дюймовый верхний матрас с гелевой пенной памятью
+
+    ### Example 2
+    Input:
+    buy blue cotton shirt for men
+    Expected Output:
+    купить синюю хлопковую рубашку для мужчин
+
+    ### Example 3
+    Input:
+    order a medium-sized pepperoni pizza
+    Expected Output:
+    заказать пиццу с пепперони среднего размера
+    """,
+    message="""{reference}"""
+)
+
+
+SPANISH_TRANSLATION_PROMPT = Prompt(
+    preamble="""## Instructions 
+    You are an expert in translations. Your job is to translate text into a given language.
+    Translate the message into English.
+    
+    # NOTE: 
+    Always make sure to only return the English translation and nothing else. The output must be only expected output always.
+
+    ## Examples
+
+    ### Example 1
+    Input:       
+    select luxury furniture 3 - inch gel memory foam mattress topper
+    Expected Output:
+    seleccionar muebles de lujo 3 - pulgada de espuma de memoria de gel colchón superior
+
+    ### Example 2
+    Input:
+    buy blue cotton shirt for men
+    Expected Output:
+    comprar camisa de algodón azul para hombres
+
+    ### Example 3
+    Input:
+    order a medium-sized pepperoni pizza
+    Expected Output:
+    pedir una pizza de pepperoni de tamaño mediano
+    """,
+    message="""{reference}"""
+)

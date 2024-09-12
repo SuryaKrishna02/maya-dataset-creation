@@ -2,10 +2,15 @@ import sys
 sys.path.append("../")
 import cohere
 from utils.constants import MODEL_NAME, COHERE_API_KEY, ISO_639_1_CODES, API_CALLS_PER_MINUTE, API_CALLS_TIME_PERIOD
+from prompts import ARABIC_TRANSLATION_PROMPT, \
+    HINDI_PROMPT, \
+    FRENCH_TRANSLATION_PROMPT, \
+    CHINESE_TRANSLATION_PROMPT, \
+    JAPANESE_TRANSLATION_PROMPT, \
+    RUSSIAN_TRANSLATION_PROMPT, \
+    SPANISH_TRANSLATION_PROMPT
 from ratelimit import sleep_and_retry, limits
-from utils.schemas import Prompt
 from transformers.models.cohere.tokenization_cohere_fast import CohereTokenizerFast
-import instructor
 from pydantic import BaseModel, Field
 import evaluate
 from transformers import AutoTokenizer
@@ -17,6 +22,7 @@ from tqdm import tqdm
 import os
 import asyncio
 from tqdm.asyncio import tqdm_asyncio
+import time
 
 
 def compute_corpus_level_chrf(predictions, references, lowercase=False):
@@ -30,22 +36,15 @@ def compute_corpus_level_chrf(predictions, references, lowercase=False):
 async def translate(
     client: cohere.AsyncClient,
     reference: str,
-    to_lang: str,
+    preamble: str
 ):
     """Translate text to a target language."""
-    TRANSLATION_PROMPT = Prompt(
-        preamble="""## Instructions
-        You are an expert in translations. Your job is to translate text into a given language.""",
-        message="""{reference}
-        Translate the above message into {to_lang}."""
-    )
     try:
         response = await client.chat(
-            chat_history=[
-                {"role": "SYSTEM", "message": TRANSLATION_PROMPT.preamble}
-            ],
-            message=TRANSLATION_PROMPT.message.format(reference=reference, to_lang=to_lang),
-            model=MODEL_NAME
+            preamble=preamble,
+            message=reference,
+            model=MODEL_NAME,
+            temperature=0.3
         )
         return response
     except Exception as e:
@@ -53,65 +52,24 @@ async def translate(
 
 
 @sleep_and_retry
-@limits(calls=API_CALLS_PER_MINUTE, period=API_CALLS_TIME_PERIOD)  # 10,000 calls per 1 minute according cohere production key documentation
-async def translate(
-    client: cohere.AsyncClient,
-    reference: str,
-    to_lang: str,
-):
-    """Translate text to a target language."""
-    TRANSLATION_PROMPT = Prompt(
-        preamble="""## Instructions
-        You are an expert in translations. Your job is to translate text into a given language.""",
-        message="""{reference}
-        Translate the above message into {to_lang}."""
-    )
-    try:
-        response = await client.chat(
-            chat_history=[
-                {"role": "SYSTEM", "message": TRANSLATION_PROMPT.preamble}
-            ],
-            message=TRANSLATION_PROMPT.message.format(reference=reference, to_lang=to_lang),
-            model=MODEL_NAME
-        )
-        return response
-    except Exception as e:
-        return e 
+@limits(calls=API_CALLS_PER_MINUTE, period=API_CALLS_TIME_PERIOD)
 async def fetch_all_translations(
     client: cohere.AsyncClient,
     references: list[str],
-    to_lang: str,
+    preamble: str
 ):
     """Fetch translations for a list of references."""
-    
-    # async def safe_translate(client, reference, to_lang):
-    #     try:
-    #         return await translate(client, reference, to_lang)
-    #     except cohere.CohereError as e: 
-    #         return "" 
-
-    tasks = [translate(client, reference, to_lang) for reference in references]
+    tasks = [translate(client, reference, preamble) for reference in references]
     translations = await tqdm_asyncio.gather(*tasks)
     translation_str = []
     for translation in translations:
         try:
             txt = translation.text 
         except:
+            print(translation)
             txt = ""
         translation_str.append(txt)
     return translation_str 
-
-# async def fetch_all_translations(
-#     client: cohere.client.Client,
-#     references: list[str],
-#     to_lang: str,
-# ):
-#     """Fetch translations for a list of references."""
-#     tasks = []
-#     for reference in references:
-#         tasks.append(translate(client, reference, to_lang))
-#         translations = await tqdm_asyncio.gather(*tasks)
-#     return translations
 
 
 def compute_sentence_level_chrf(predictions, references, lowercase=False):
@@ -131,7 +89,7 @@ def check_repeated_tokens(
     """Check if the prediction has repeated tokens (two or more identical tokens that occur consecutively) that don't appear in the reference text."""
     prediction_tokens = tokenizer.tokenize(prediction)
     reference_tokens = tokenizer.tokenize(reference)
-    for i in range(len(prediction_tokens) - 2):
+    for i in range(len(prediction_tokens) - 1):
         # if two consecutive tokens are identical and are in not in the original text
         # ie: are not two spaces or newlines, then return true
         if prediction_tokens[i] == prediction_tokens[i + 1] and\
@@ -153,36 +111,10 @@ def filter_chrf_scores(example, threshold=0.5):
 
 def flatten_conversations(example):
     # Extract and flatten conversations from the columns
-    turns = [conv['value'] for conv in example['conversations']]
-
-    # Strip <image> tags
-    turns = [turn.replace('<image>', '') for turn in turns]
-
-    # Join turns into a single string
-    turns = '\n'.join(turns).strip('\n')
-
     return {
         'id': example['id'],
-        'conversations': turns 
+        'conversations': example['conversations'][-1]['value']
     }
-
-
-def find_english_texts(examples):
-    english_texts = defaultdict(str)
-    for id, is_english, conversation in zip(examples['id'], examples['is_english'], examples['conversations']):
-        if is_english:
-            english_texts[id] = conversation
-    return {'english_texts': [english_texts[id] for id in examples['id']]}
-
-
-def add_reference_text(examples, english_texts):
-    reference_texts = []
-    for id, is_english in zip(examples['id'], examples['is_english']):
-        if is_english:
-            reference_texts.append("")
-        else:
-            reference_texts.append(english_texts.get(id, ""))
-    return {'reference_text': reference_texts}
 
 
 def make_splits(dataset, n_splits):
@@ -194,6 +126,24 @@ def make_splits(dataset, n_splits):
         end = (i + 1) * split_size
         splits.append(dataset.select(range(start, end)))
     return splits
+
+
+def find_english_texts(examples):
+    english_texts = defaultdict(str)
+    for id, lang, conversation in zip(examples['id'], examples['language'], examples['conversations']):
+        if lang == 'en':
+            english_texts[id] = conversation
+    return {'english_texts': [english_texts[id] for id in examples['id']]}
+
+
+def add_reference_text(examples, english_texts):
+    reference_texts = []
+    for id, language in zip(examples['id'], examples['language']):
+        if language == 'en':
+            reference_texts.append("")
+        else:
+            reference_texts.append(english_texts.get(id, "id_not_found"))
+    return {'reference_text': reference_texts}
 
 
 def add_reference_text_column(dataset):
@@ -213,6 +163,56 @@ def add_reference_text_column(dataset):
         batched=True,
         desc="Adding reference text column"
     )
+
+
+def upload_ds_from_local(path: str, username: str, private: bool =False):
+    ds = load_dataset(path)
+    ds.push_to_hub(f"{username}/{path}", private=private)
+
+
+def join_datasets(paths: list[str]):
+    datasets = [load_dataset(path) for path in paths]
+    return datasets[0].concatenate(datasets[1:])
+
+
+async def do_backtranslations(
+    ds: Dataset,
+    co: cohere.AsyncClient,
+    languages_to_backtranslate: list[str] = ["ar", "zh", "fr", "hi", "jp", "ru", "es"]
+):
+    all_results = [] 
+    for lang in languages_to_backtranslate:
+        tmp_ds = ds.filter(lambda example: example['language'] == lang)
+        references = tmp_ds["conversations"]
+        if lang == "ar":
+            prompt = ARABIC_TRANSLATION_PROMPT
+        elif lang == "zh":
+            prompt = CHINESE_TRANSLATION_PROMPT
+        elif lang == "fr":
+            prompt = FRENCH_TRANSLATION_PROMPT
+        elif lang == "hi":
+            prompt = HINDI_PROMPT
+        elif lang == "jp":
+            prompt = JAPANESE_TRANSLATION_PROMPT
+        elif lang == "ru":
+            prompt = RUSSIAN_TRANSLATION_PROMPT
+        elif lang == "es":
+            prompt = SPANISH_TRANSLATION_PROMPT
+        else:
+            raise ValueError(f"Language {lang} not supported.")
+
+        size_of_chunk = 100 
+        reference_chunks = [references[i:i+size_of_chunk] for i in range(0, len(references), size_of_chunk)]
+        for chunk in reference_chunks:
+            results = await fetch_all_translations(co, chunk, prompt.preamble) 
+            all_results.extend(results)
+            time.sleep(1.0) # weird thing is that raising batch size from 16 to 100 and adding manual sleep improved throughput 
+
+    ds = ds.add_column(
+        "back_translations",
+        all_results
+    )
+    return ds
 
 
 def run_validation(
@@ -251,7 +251,7 @@ def run_validation(
     return results
     
 
-async def main():
+def main():
     dataset = load_dataset("kkr5155/Maya-llava-pretrain")
 
     # add language
@@ -266,55 +266,37 @@ async def main():
         "hi",
         "jp",
         "ru",
-        "ja"
+        "es"
     ]
-    dataset = dataset.map(lambda example, index: {'language': languages[index // (num_examples // num_languages)]}, with_indices=True)
+    dataset = dataset.map(lambda example, index: 
+                          {'language': languages[index // (num_examples // num_languages)]},
+                            with_indices=True,
+                            desc="Adding language column")
 
-    dataset['train'] = dataset['train'].map(lambda example: {"is_english": example['language'] == 'en'})
 
-    # prepare ds
     transformed_dataset = DatasetDict()
     for split in dataset.keys():
-        transformed_dataset[split] = dataset[split].map(flatten_conversations)
+        transformed_dataset[split] = dataset[split].map(flatten_conversations, desc="Flattening conversations")
+
+    ## Do backtranslations if needed
+    if "back_translations" not in transformed_dataset['train'].column_names:
+        co = cohere.AsyncClient(api_key=COHERE_API_KEY)
+        transformed_dataset['train'] = asyncio.run(do_backtranslations(transformed_dataset['train'], co))
+        transformed_dataset['train'].save_to_disk(f'validation_results_back_translate')
+
+    # prepare ds
+    for split in transformed_dataset.keys():
         transformed_dataset[split] = add_reference_text_column(transformed_dataset[split])
 
         # No need to validate english examples -- filter out english
         transformed_dataset[split] = transformed_dataset[split].filter(lambda example: not example['language'] == 'en')  
 
-    ## TMP --  backtranslate
-    LANG_TO_BACKTRANSLATE = "ar" 
-
-    transformed_dataset['train'] = transformed_dataset['train'].filter(lambda example: example['language']==LANG_TO_BACKTRANSLATE)
-
     # tests to run
     repeated_tokens = False
     back_translate_chrf = True
 
-    # backtranslate
-    if back_translate_chrf:
-        if "back_translations" not in transformed_dataset['train'].column_names:
-            co = cohere.AsyncClient(api_key=COHERE_API_KEY)
-            # for now all backtranslations are into english, add lang id later
-            LANG_VERBOSE = ISO_639_1_CODES["en"]
-            # do back translation
-            references = transformed_dataset['train']["reference_text"]
-
-            size_of_chunk = 160
-            reference_chunks = [references[i:i+size_of_chunk] for i in range(0, len(references), size_of_chunk)]
-            all_results = []
-            for chunk in reference_chunks:
-                results = await fetch_all_translations(co, chunk, LANG_VERBOSE)
-                all_results.extend(results) 
-
-            transformed_dataset['train'] = transformed_dataset['train'].add_column(
-                "back_translations",
-                all_results
-            )
-            # Save to upload later
-            transformed_dataset['train'].save_to_disk(f'validation_results_back_translate_lang_{LANG_TO_BACKTRANSLATE}')
-    
-    # # tmp for testing
-    # # transformed_dataset['train'] = transformed_dataset['train'].select(range(50))
+    # tmp for testing
+    # transformed_dataset['train'] = transformed_dataset['train'].select(range(50))
     
     results_train = run_validation(
         dataset=transformed_dataset['train'],
@@ -341,4 +323,4 @@ async def main():
 
 ### Sample run
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
