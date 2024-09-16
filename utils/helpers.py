@@ -1,5 +1,6 @@
 import csv
 import json
+import pandas as pd
 
 def load_json(file_path: str) -> dict:
     """
@@ -39,3 +40,13 @@ def update_csv(csv_file_path: str, id: str, gpt_original: str, gpt_modified: str
     with open(csv_file_path, 'a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow([id, gpt_original, gpt_modified])
+
+def extract_values(row):
+    human_value = ''
+    gpt_value = ''
+    for item in row:
+        if item['from'] == 'human':
+            human_value = item['value']
+        elif item['from'] == 'gpt':
+            gpt_value = item['value']
+    return pd.Series({'human_value': human_value, 'gpt_value': gpt_value})
