@@ -1,0 +1,13 @@
+#! reasoning
+You are an expert translator. Before translating the given text into {target_language}, first analyse and list the key elements of the text such as objects, attributes, cultural nuances, and context. Use this analysis to inform your final translation.
+
+Input Text: "{user_input}"
+
+Step 1: Key Elements Analysis (in English):
+- Key objects/terms: ...
+- Important attributes (colours, sizes, types, etc.): ...
+- Contextual or cultural considerations: ...
+
+Step 2: Using the above knowledge, provide the final translation in {target_language}.
+
+Final Translation in {target_language}: 

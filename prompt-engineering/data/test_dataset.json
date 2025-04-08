@@ -1,0 +1,32 @@
+[
+  {
+    "input_text": "buy blue cotton shirt for men",
+    "translation_spanish": "comprar camisa de algodón azul para hombres",
+    "translation_french": "acheter une chemise en coton bleu pour hommes",
+    "translation_chinese": "为男性购买蓝色棉衬衫",
+    "translation_japanese": "男性用の青い綿シャツを購入する",
+    "translation_hindi": "पुरुषों के लिए नीली कॉटन शर्ट खरीदें",
+    "translation_arabic": "اشتر قميصًا قطنيًا أزرق للرجال",
+    "translation_russian": "купить синюю хлопковую рубашку для мужчин"
+  },
+  {
+    "input_text": "order a medium-sized pepperoni pizza",
+    "translation_spanish": "pedir una pizza de pepperoni de tamaño mediano",
+    "translation_french": "commande une pizza pepperoni de taille moyenne",
+    "translation_chinese": "订购一个中号香肠披萨",
+    "translation_japanese": "中サイズのペパロニピザを注文する",
+    "translation_hindi": "मीडियम साइज पेपरोनी पिज्जा ऑर्डर करें",
+    "translation_arabic": "اطلب بيتزا بيبروني بحجم متوسط",
+    "translation_russian": "заказать пиццу с пепперони среднего размера"
+  },
+  {
+    "input_text": "select luxury furniture 3-inch gel memory foam mattress topper",
+    "translation_spanish": "seleccionar muebles de lujo 3 - pulgada de espuma de memoria de gel colchón superior",
+    "translation_french": "sélectionnez un surmatelas en mousse à mémoire de forme luxueux de 3 pouces",
+    "translation_chinese": "选择豪华家具 3 英寸凝胶记忆海绵床垫套",
+    "translation_japanese": "高級家具を選択 3 インチのジェルメモリーフォームマットレストッパー",
+    "translation_hindi": "लक्जरी फर्नीचर 3-इंच जेल मेमोरी फोम गद्दा टॉपर चुनें",
+    "translation_arabic": "اختر مرتبة إضافية من رغوة الذاكرة جل المريحة الفاخرة بعرض 3 بوصات",
+    "translation_russian": "выберите роскошную мебель 3-дюймовый верхний матрас с гелевой пенной памятью"
+  }
+] 

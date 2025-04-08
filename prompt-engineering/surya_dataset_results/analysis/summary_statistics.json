@@ -1,0 +1,115 @@
+{
+  "overall": {
+    "avg_bleu_1gram": 0.3522662376861694,
+    "avg_bleu_2gram": 0.2743925746952577,
+    "avg_bleu_3gram": 0.22194386618547515,
+    "avg_bleu_4gram": 0.1803979521733558,
+    "avg_bleu_overall": 0.2572501576850645,
+    "total_evaluations": 1200
+  },
+  "by_language": {
+    "Chinese": 0.17590279668814202,
+    "French": 0.3507112580763625,
+    "Hindi": 0.20529336664818834,
+    "Spanish": 0.29709320932756517
+  },
+  "by_prompt_type": {
+    "Zero-Shot": 0.25725015768506454
+  },
+  "by_combined_prompt_type": {
+    "Zero-Shot": 0.19928243231463671,
+    "Zero-Shot Reasoning": 0.31521788305549225
+  },
+  "by_prompt_name": {
+    "karthik_1_tree_of_thoughts": 0.3485663030987344,
+    "karthik_2_generate_knowledge": 0.3114373153341012,
+    "karthik_3_self_consistency": 0.18437215677122193,
+    "karthik_4_meta_prompt": 0.3284678120102395,
+    "karthik_5_chain_of_thought": 0.4032458280631643,
+    "preamble1": 0.2580784188017699,
+    "preamble2": 0.2032173532533073,
+    "preamble3": 0.15487415587402575,
+    "preamble4": 0.22514455596534894,
+    "preamble5": 0.15509767767873184
+  },
+  "by_is_preamble": {
+    "false": 0.31521788305549225,
+    "true": 0.19928243231463671
+  },
+  "by_is_reasoning": {
+    "false": 0.19928243231463671,
+    "true": 0.31521788305549225
+  },
+  "best_combinations": [
+    {
+      "language": "French",
+      "prompt_name": "karthik_5_chain_of_thought",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.4638263237054109
+    },
+    {
+      "language": "Spanish",
+      "prompt_name": "preamble1",
+      "combined_prompt_type": "Zero-Shot",
+      "is_preamble": true,
+      "avg_bleu": 0.4359185700757678
+    },
+    {
+      "language": "French",
+      "prompt_name": "karthik_1_tree_of_thoughts",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.43189474696677954
+    },
+    {
+      "language": "French",
+      "prompt_name": "karthik_2_generate_knowledge",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.42911861375679466
+    },
+    {
+      "language": "Spanish",
+      "prompt_name": "karthik_5_chain_of_thought",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.4257053383452897
+    },
+    {
+      "language": "French",
+      "prompt_name": "karthik_4_meta_prompt",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.39880041674780686
+    },
+    {
+      "language": "Spanish",
+      "prompt_name": "karthik_4_meta_prompt",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.3672655318543467
+    },
+    {
+      "language": "French",
+      "prompt_name": "preamble4",
+      "combined_prompt_type": "Zero-Shot",
+      "is_preamble": true,
+      "avg_bleu": 0.36411532967524224
+    },
+    {
+      "language": "Chinese",
+      "prompt_name": "karthik_5_chain_of_thought",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.36398423694685644
+    },
+    {
+      "language": "Hindi",
+      "prompt_name": "karthik_5_chain_of_thought",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.35946741325510023
+    }
+  ]
+}

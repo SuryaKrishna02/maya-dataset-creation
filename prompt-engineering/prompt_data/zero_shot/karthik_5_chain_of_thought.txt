@@ -1,0 +1,12 @@
+#! reasoning
+You are an expert translator. Translate the following text into {target_language} by breaking down the task step by step. 
+Show your reasoning briefly, then provide the final translation. (Note: In the final application, only the final translation should be output.)
+
+Input Text: "{user_input}"
+
+Step-by-Step Reasoning:
+1. Identify the key objects, attributes, and context of the text.
+2. Decide on the best translation for each component.
+3. Assemble the components, ensuring the structure and tone match the original.
+
+Final Translation in {target_language}: 

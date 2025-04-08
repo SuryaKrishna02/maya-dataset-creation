@@ -1,0 +1,37 @@
+{
+    "Hindi": {
+        "example1": "लक्जरी फर्नीचर 3-इंच जेल मेमोरी फोम गद्दा टॉपर चुनें",
+        "example2": "पुरुषों के लिए नीली कॉटन शर्ट खरीदें",
+        "example3": "मीडियम साइज पेपरोनी पिज्जा ऑर्डर करें"
+    },
+    "Japanese": {
+        "example1": "高級家具を選択 3 インチのジェルメモリーフォームマットレストッパー",
+        "example2": "男性用の青い綿シャツを購入する",
+        "example3": "中サイズのペパロニピザを注文する"
+    },
+    "Chinese": {
+        "example1": "选择豪华家具 3 英寸凝胶记忆海绵床垫套",
+        "example2": "为男性购买蓝色棉衬衫",
+        "example3": "订购一个中号香肠披萨"
+    },
+    "French": {
+        "example1": "sélectionnez un surmatelas en mousse à mémoire de forme luxueux de 3 pouces",
+        "example2": "achetez une chemise en coton bleu pour hommes",
+        "example3": "commande une pizza pepperoni de taille moyenne"
+    },
+    "Arabic": {
+        "example1": "اختر مرتبة إضافية من رغوة الذاكرة جل المريحة الفاخرة بعرض 3 بوصات",
+        "example2": "اشتر قميصًا قطنيًا أزرق للرجال",
+        "example3": "اطلب بيتزا بيبروني بحجم متوسط"
+    },
+    "Russian": {
+        "example1": "выберите роскошную мебель 3-дюймовый верхний матрас с гелевой пенной памятью",
+        "example2": "купить синюю хлопковую рубашку для мужчин",
+        "example3": "заказать пиццу с пепперони среднего размера"
+    },
+    "Spanish": {
+        "example1": "seleccionar muebles de lujo 3 - pulgada de espuma de memoria de gel colchón superior",
+        "example2": "comprar camisa de algodón azul para hombres",
+        "example3": "pedir una pizza de pepperoni de tamaño mediano"
+    }
+}

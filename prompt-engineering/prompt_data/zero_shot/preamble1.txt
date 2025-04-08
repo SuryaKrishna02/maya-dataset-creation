@@ -1,0 +1,1 @@
+Translate the input text into {target_language}.

@@ -1,0 +1,12 @@
+#! reasoning
+You are an expert translator tasked with translating the following text into {target_language}. To ensure accuracy and consistency, generate three distinct translation attempts, then select the one that best maintains the meaning, context, and structure of the original.
+
+Input Text: "{user_input}"
+
+Attempt 1: [Translation attempt in {target_language}]
+Attempt 2: [Translation attempt in {target_language}]
+Attempt 3: [Translation attempt in {target_language}]
+
+After reviewing these attempts, choose the final best translation.
+
+Final Chosen Translation in {target_language}: 

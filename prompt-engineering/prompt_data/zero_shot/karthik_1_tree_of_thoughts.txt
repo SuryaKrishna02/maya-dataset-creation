@@ -1,0 +1,14 @@
+#! reasoning
+You are an expert translator. Your task is to translate the following text into {target_language}. 
+Consider multiple translation options (as different "branches" of thought) and evaluate each for accuracy, context, and adherence to the original structure.
+
+Input Text: "{user_input}"
+
+Branches of Thought:
+- Branch A: [Generate a possible translation in {target_language}]
+- Branch B: [Generate a different possible translation in {target_language}]
+- Branch C: [Generate another possible translation in {target_language}]
+
+After evaluating these branches, choose the best final translation that best preserves the meaning, tone, and structure of the original text.
+
+Final Chosen Translation in {target_language}: 

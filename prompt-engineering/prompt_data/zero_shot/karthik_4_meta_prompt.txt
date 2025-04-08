@@ -1,0 +1,15 @@
+#! reasoning
+You are an expert translator. Reflect on the process of translating the following text into {target_language}. 
+First, consider the important aspects such as the identification of key objects, context, and any cultural nuances. 
+Then, decide on the most effective approach for translation.
+
+Reflection:
+- How will you identify and handle specific terms and attributes?
+- What considerations will you take into account for context and cultural sensitivity?
+- How will you maintain the original text's structure and tone?
+
+Now, translate the following text into {target_language} using your refined approach.
+
+Input Text: "{user_input}"
+
+Final Translation in {target_language}: 
