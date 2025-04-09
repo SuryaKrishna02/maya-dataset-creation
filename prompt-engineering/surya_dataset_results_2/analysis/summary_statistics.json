@@ -1,0 +1,118 @@
+{
+  "overall": {
+    "avg_bleu_1gram": 0.36221598672303407,
+    "avg_bleu_2gram": 0.2834081853152642,
+    "avg_bleu_3gram": 0.23072211497440284,
+    "avg_bleu_4gram": 0.18950344140597522,
+    "avg_bleu_overall": 0.2664624321046691,
+    "total_evaluations": 1320
+  },
+  "by_language": {
+    "Chinese": 0.1821512152280721,
+    "French": 0.36337869145820995,
+    "Hindi": 0.21363425488806692,
+    "Spanish": 0.3066855668443273
+  },
+  "by_prompt_type": {
+    "Few-Shot": 0.3417136225456529,
+    "Zero-Shot": 0.25893731306057066
+  },
+  "by_combined_prompt_type": {
+    "Few-Shot": 0.3417136225456529,
+    "Zero-Shot": 0.20568185819775248,
+    "Zero-Shot Reasoning": 0.3121927679233889
+  },
+  "by_prompt_name": {
+    "karthik_1_tree_of_thoughts": 0.32608082113715825,
+    "karthik_2_generate_knowledge": 0.3205886022296979,
+    "karthik_3_self_consistency": 0.17325871862876666,
+    "karthik_4_meta_prompt": 0.33215112321696,
+    "karthik_5_chain_of_thought": 0.40888457440436166,
+    "preamble1": 0.2766906172739377,
+    "preamble2": 0.19885707087699844,
+    "preamble3": 0.16110723604884114,
+    "preamble4": 0.23711781422723885,
+    "preamble5": 0.1546365525617463,
+    "preamble6": 0.3417136225456529
+  },
+  "by_is_preamble": {
+    "false": 0.3121927679233889,
+    "true": 0.22835381892240258
+  },
+  "by_is_reasoning": {
+    "false": 0.22835381892240258,
+    "true": 0.3121927679233889
+  },
+  "best_combinations": [
+    {
+      "language": "French",
+      "prompt_name": "karthik_5_chain_of_thought",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.4690818990243021
+    },
+    {
+      "language": "French",
+      "prompt_name": "karthik_2_generate_knowledge",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.4512755454524548
+    },
+    {
+      "language": "Spanish",
+      "prompt_name": "preamble1",
+      "combined_prompt_type": "Zero-Shot",
+      "is_preamble": true,
+      "avg_bleu": 0.45058227983100185
+    },
+    {
+      "language": "French",
+      "prompt_name": "preamble6",
+      "combined_prompt_type": "Few-Shot",
+      "is_preamble": true,
+      "avg_bleu": 0.44958875213603233
+    },
+    {
+      "language": "Spanish",
+      "prompt_name": "karthik_5_chain_of_thought",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.4242320945125945
+    },
+    {
+      "language": "Spanish",
+      "prompt_name": "preamble6",
+      "combined_prompt_type": "Few-Shot",
+      "is_preamble": true,
+      "avg_bleu": 0.4188854473479605
+    },
+    {
+      "language": "French",
+      "prompt_name": "karthik_1_tree_of_thoughts",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.399781162995594
+    },
+    {
+      "language": "French",
+      "prompt_name": "preamble1",
+      "combined_prompt_type": "Zero-Shot",
+      "is_preamble": true,
+      "avg_bleu": 0.39620193496695694
+    },
+    {
+      "language": "French",
+      "prompt_name": "karthik_4_meta_prompt",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.382634470867191
+    },
+    {
+      "language": "Hindi",
+      "prompt_name": "karthik_5_chain_of_thought",
+      "combined_prompt_type": "Zero-Shot Reasoning",
+      "is_preamble": false,
+      "avg_bleu": 0.3808721828381116
+    }
+  ]
+}

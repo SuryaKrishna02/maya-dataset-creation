@@ -20,28 +20,28 @@
 ```
 .
 ├── data/
-│   ├── few_shot_data.json       # Few-shot examples 
-│   └── test_dataset.json        # Test dataset for evaluation
+│   ├── few_shot_data.json              # Few-shot examples 
+│   └── test_dataset.json               # Test dataset for evaluation
 ├── prompt_data/
-│   ├── few_shot/                # Few-shot prompt templates
-│   └── zero_shot/               # Zero-shot prompt templates
+│   ├── few_shot/                       # Few-shot prompt templates
+│   └── zero_shot/                      # Zero-shot prompt templates
 ├── pipeline/
-│   ├── prompt_generator.py      # Prompt generation utilities
-│   ├── pipeline.py              # Main evaluation pipeline
-│   ├── clean_utils.py           # Text cleaning utilities
-│   ├── eval_utils.py            # Evaluation metrics
-│   └── analyze_results.py       # Results analysis
-├── results/                     # Evaluation results
-│   └── result_[timestamp]/      # Timestamped results directory
-│       ├── evaluation_results.json  # Evaluation results
-│       └── analysis/            # Analysis outputs
-│           ├── plots/           # Generated visualizations
-│           └── summary_statistics.json  # Summary of results
-├── run_evaluation.py            # Script to run the evaluation pipeline
-├── run_analysis.py              # Script to analyse existing results
-├── run_evaluate_and_analyse.py  # Script to run evaluation and analysis together
-├── example_usage.ipynb          # Jupyter notebook with code examples
-└── requirements.txt             # Project dependencies
+│   ├── prompt_generator.py             # Prompt generation utilities
+│   ├── pipeline.py                     # Main evaluation pipeline
+│   ├── clean_utils.py                  # Text cleaning utilities
+│   ├── eval_utils.py                   # Evaluation metrics
+│   └── analyze_results.py              # Results analysis
+├── results/                            # Evaluation results
+│   └── result_[timestamp]/             # Timestamped results directory
+│       ├── evaluation_results.json     # Evaluation results
+│       └── analysis/                   # Analysis outputs
+│           ├── plots/                  # Generated visualizations
+│           └── summary_statistics.json # Summary of results
+├── eval.py                             # Script to run the evaluation pipeline
+├── analyze.py                          # Script to analyse existing results
+├── eval_and_analyze.py                 # Script to run evaluation and analysis together
+├── example_usage.ipynb                 # Jupyter notebook with code examples
+└── requirements.txt                    # Project dependencies
 ```
 
 ## Installation
@@ -256,3 +256,8 @@ The analysis script generates:
 - **BLEU Score Distribution**: Shows the distribution of BLEU scores for different combinations
 - **Top Performing Combinations**: Identifies the best language-prompt combinations
 
+# Tl;dr
+```
+python eval_and_analyze.py --dataset <dataset-location> --workers 15 --languages Spanish French Chinese Hindi 
+```
+Is probably all you need to run. Leave `--dataset` empty to default to an inbuilt test set. However, the few-shot prompts will leak most of the answers to the inbuilt test set.
