@@ -16,6 +16,7 @@ from pipeline.clean_utils import (
     extract_thinking_content,
     normalize_whitespace,
 )
+from dotenv import load_dotenv
 from pipeline.analyze_results import calculate_average_bleu_per_preamble_language
 from cohere.errors.too_many_requests_error import TooManyRequestsError
 
@@ -27,6 +28,7 @@ DEFAULT_MODEL = "c4ai-aya-expanse-32b"
 MAX_RETRIES = 10
 
 # Initialize Cohere client with API key from environment variable
+load_dotenv()
 cohere_api_key = os.environ.get("COHERE_API_KEY")
 if not cohere_api_key:
     raise ValueError("COHERE_API_KEY environment variable is not set")
@@ -81,7 +83,16 @@ def generate_translation(
 
             # For reasoning prompts, add additional instruction to use thinking tags
             if is_reasoning_prompt:
-                system_msg += "\nPlease enclose any thinking or reasoning processes that are not related to the final translation in <thinking>...</thinking> tags. Other than that, the final output should only be a translation."
+                system_msg += dedent(
+                    """
+                    Please enclose any thinking or reasoning processes that are not related to the final translation in <thinking>...</thinking> tags. Other than that, the final output should be the translated content with no indicators.
+                    The final output should be in the following format:
+                    <thinking>
+                    {thinking content}
+                    </thinking>
+                    {translated content}
+                    """
+                )
 
             messages = [
                 {"role": "system", "content": system_msg},
@@ -415,7 +426,7 @@ def evaluate_prompts_multithreaded(
 
 def run_evaluation_pipeline(
     dataset_path: str = "../data/test_dataset.json",
-    output_path: str = "../results/evaluation_results.json",
+    output_path: Optional[str] = "../results/evaluation_results.json",
     max_workers: int = 5,
     languages: Optional[List[str]] = None,
     prompt_types: Optional[List[str]] = None,
@@ -436,6 +447,16 @@ def run_evaluation_pipeline(
     """
     print(f"Starting evaluation pipeline with {max_workers} workers")
     print(f"Using Cohere model: {cohere_model}")
+
+    if output_path is None:
+        # Create a results directory structure with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        results_dir = os.path.join("results", f"result_{timestamp}")
+        os.makedirs(results_dir, exist_ok=True)
+
+        # Set output path within the timestamped directory
+        output_filename = "evaluation_results.json"
+        output_path = os.path.join(results_dir, output_filename)
 
     # Load the test dataset
     dataset = load_test_dataset(dataset_path)

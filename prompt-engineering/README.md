@@ -1,6 +1,12 @@
 # Translation Evaluation Pipeline
 
-> Note: This was ported over from a previous repository and `prompt-engineering` was the root directory of the project. So when calling functions in the command line, please `cd` into the `prompt-engineering` directory first.
+## Special Setup Instructions
+> Note: This was ported over from a previous repository and `prompt-engineering` was the root directory of the project.
+- Create a `.venv` virtual environment in the root directory `maya-dataset-creation` by running `python -m venv .venv`.
+- Install the dependencies by running `pip install -r requirements.txt`.
+- Install prompt-engineering-specific dependencies by running `pip install -r prompt-engineering/requirements.txt`.
+- Activate the virtual environment by running `source .venv/bin/activate`.
+- Then, you must `cd` into the `prompt-engineering` directory before running the command line arguments listed in this README.
 <!-- 
 > :warning: This pipeline is currently in development and has not been tested yet. -->
 
@@ -119,8 +125,8 @@ from pipeline.analyze_results import analyze_results
 
 # Run evaluation
 run_evaluation_pipeline(
-    dataset_path="json datset name inside `data/` folder",
-    output_path="results/result_20250408/evaluation_results.json",
+    dataset_path="path to the test dataset",
+    output_path="results/result_20250408/evaluation_results.json", # default is results/result_[timestamp]/evaluation_results.json. 
     max_workers=10,  # Number of parallel workers
     languages=["Spanish", "French", "Chinese"],  # Specific languages to test
     prompt_types=["Zero-Shot"],  # Specific prompt types to test (defaults to both if not specified)
@@ -129,10 +135,12 @@ run_evaluation_pipeline(
 
 # Analyze results
 analyze_results(
-    "results/result_20250408/evaluation_results.json", 
-    "results/result_20250408/analysis"
+    "results/result_20250408/evaluation_results.json", # Path to the results (json) file
+    "results/result_20250408/analysis" # Directory to save the analysis results. Recommended: the parent folder of the evaluation results.
 )
 ```
+> Following the code example, it is recommended that you put evaluation_results.json in a designated folder, so it can also contain the analysis results from analyze function.
+
 
 For more detailed examples, see the `example_usage.ipynb` Jupyter notebook included in this repository.
 
