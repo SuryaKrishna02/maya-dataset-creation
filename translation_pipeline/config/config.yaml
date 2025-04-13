@@ -1,0 +1,29 @@
+# Translation Pipeline Configuration
+
+# Model parameters
+model_name: "CohereForAI/aya-expanse-32b"  # Model to use for translation
+temperature: 0.1                          # Temperature for generation (lower = more deterministic)
+precision: "float16"                      # Precision to load the model with (float16, float32)
+
+# Processing mode
+batch_processing: true                    # Whether to use batch processing
+
+# Languages to translate to
+languages:
+  - hindi
+  - spanish
+  - french
+  - german
+
+# File paths
+dataset_path: "data/blip_laion_cc_sbu_558k.json"                # Path to the original dataset
+human_values_translation_path: "data/human_values_translation.json"  # Path to human values translations
+error_log_path: "logs/error.log"                               # Path for error logs
+log_path: "logs/translation.log"                               # Path for general logs
+sample_dataset_path: "data/sample_dataset.json"                # Path to sample dataset for batch size calculation
+output_dir: "output"                                           # Directory for output files
+
+# Optional parameters
+max_new_tokens: 100                       # Maximum number of new tokens to generate
+do_sample: true                           # Whether to use sampling for generation
+optimal_batch_size: null                  # Batch size (null for automatic calculation)
