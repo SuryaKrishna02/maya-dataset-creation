@@ -125,11 +125,11 @@ FRENCH_PROMPT = Prompt(
     user_msg=MESSAGE_PLACEHOLDER
 )
 
-# German translation prompt
-GERMAN_PROMPT = Prompt(
+# Chinese translation prompt
+CHINESE_PROMPT = Prompt(
     system_msg=dedent("""
                 ## Instructions
-                You are an expert in translations. Your job is to translate the input to German in the given chat.
+                You are an expert in translations. Your job is to translate the input to Chinese in the given chat.
                 Ensure that:
                 - **Object Recognition**: Identify and translate objects accurately.
                 - **Accurate Translation**: Maintain the meaning and context of the original text.
@@ -165,8 +165,7 @@ LANGUAGE_PROMPTS = {
     "hindi": HINDI_PROMPT,
     "spanish": SPANISH_PROMPT,
     "french": FRENCH_PROMPT,
-    "german": GERMAN_PROMPT,
-    # Add more languages as needed
+    "chinese": CHINESE_PROMPT,
 }
 
 

@@ -97,9 +97,18 @@ class Translator:
             self.human_translations = load_human_values_translation(
                 self.config.human_values_translation_path
             )
+            # Log which languages were successfully loaded from CSV
+            loaded_langs = list(self.human_translations.keys())
+            self.logger.info(f"Successfully loaded translations for languages: {loaded_langs}")
+            
+            # Check if all languages in config are available in the translations
+            missing_langs = [lang for lang in self.config.languages if lang not in loaded_langs]
+            if missing_langs:
+                self.logger.warning(f"Missing translations for configured languages: {missing_langs}")
         except (FileNotFoundError, ValueError) as e:
             self.logger.error(f"Error loading human values translations: {e}")
             self.human_translations = {}
+            self.logger.info("Expected CSV format should have columns: 'English Sentence', 'Hindi Translation', 'Spanish Translation', etc.")
     
     def translate_batch(
         self,
@@ -207,21 +216,50 @@ class Translator:
     
     def _get_human_translation(self, text: str, language: str) -> str:
         """
-        Get translation for a human value.
+        Get translation for a human value, preserving <image> tag and newline placement.
         
         Args:
-            text: Text to translate
-            language: Language to translate to
+            text: Source text in English to translate
+            language: Target language to translate to
             
         Returns:
-            Translated text or original text if no translation is available
+            Translated text with <image> tag and newlines preserved, or original text if no translation is available
         """
-        if language in self.human_translations and text in self.human_translations[language]:
-            return self.human_translations[language][text]
-        else:
-            # If no translation is available, keep the original
-            self.logger.warning(f"No translation found for human value: {text}")
-            return text
+        # Define constants for the image tag patterns
+        IMAGE_TAG_START = "<image>\n"
+        IMAGE_TAG_END = "\n<image>"
+        IMAGE_TAG_PLAIN = "<image>"
+        
+        # Check if the original text contains the image tag patterns
+        has_image_tag_start = text.startswith(IMAGE_TAG_START)
+        has_image_tag_end = text.endswith(IMAGE_TAG_END)
+        
+        # Remove the image tag and surrounding newlines for lookup
+        clean_text = text
+        if has_image_tag_start:
+            clean_text = clean_text.replace(IMAGE_TAG_START, "", 1)
+        if has_image_tag_end:
+            clean_text = clean_text.replace(IMAGE_TAG_END, "", 1)
+        
+        # Further cleanup in case there are other image tags
+        clean_text = clean_text.replace(IMAGE_TAG_PLAIN, "").strip()
+        
+        # Try to find the translation for the clean text
+        if language in self.human_translations and clean_text in self.human_translations[language]:
+            # Get the translation without tags
+            translation = self.human_translations[language][clean_text]
+            
+            # Add back the tags in their original positions
+            if has_image_tag_start:
+                translation = IMAGE_TAG_START + translation
+            if has_image_tag_end:
+                translation = translation + IMAGE_TAG_END
+            
+            return translation
+        
+        # If no exact match, log the warning and return the original
+        self.logger.warning(f"No translation found for human value: {text}")
+        return text
     
     def translate_text(
         self,

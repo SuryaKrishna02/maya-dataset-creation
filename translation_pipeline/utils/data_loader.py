@@ -7,6 +7,7 @@ This module handles loading and processing data for the translation pipeline.
 import os
 import json
 import logging
+import pandas as pd
 from typing import Dict, List, Any, Tuple, Optional
 
 
@@ -33,28 +34,62 @@ def load_dataset(file_path: str) -> Dict[str, Any]:
 
 def load_human_values_translation(file_path: str) -> Dict[str, Dict[str, str]]:
     """
-    Load human values translation dataset from a JSON file.
+    Load human values translation dataset from a CSV file.
     
     Args:
-        file_path: Path to the JSON file containing translations
+        file_path: Path to the CSV file containing translations
         
     Returns:
         Dictionary mapping original values to translations for each language
     """
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            translations = json.load(f)
+        # Load CSV file using pandas for better handling of potential complex values with newlines
+        df = pd.read_csv(file_path, encoding='utf-8')
         
-        # Validate structure: translations[language][original_text] = translated_text
-        for lang, trans_dict in translations.items():
-            if not isinstance(trans_dict, dict):
-                raise ValueError(f"Invalid format for language '{lang}' in translations file")
+        # Expected columns based on provided information
+        expected_columns = [
+            'English Sentence', 'Chinese Translation', 'Hindi Translation', 
+            'Spanish Translation', 'French Translation', 'Arabic Translation', 
+            'Russian Translation', 'Japanese Translation'
+        ]
+        
+        # Check if required columns exist
+        missing_columns = [col for col in expected_columns if col not in df.columns]
+        if missing_columns:
+            logging.warning(f"Missing expected columns in translation CSV: {missing_columns}")
+        
+        # Map CSV column names to language codes used in the config
+        language_map = {
+            'Hindi Translation': 'hindi',
+            'Spanish Translation': 'spanish',
+            'French Translation': 'french',
+            'Chinese Translation': 'chinese',
+            'Arabic Translation': 'arabic',
+            'Russian Translation': 'russian',
+            'Japanese Translation': 'japanese'
+        }
+        
+        # Initialize translation dictionary
+        translations = {lang: {} for lang in language_map.values()}
+        
+        # Populate the translations dictionary
+        for _, row in df.iterrows():
+            # Original English text is the key
+            original_text = row.get('English Sentence', '')
+            if not original_text or pd.isna(original_text):
+                continue
+                
+            # Add translations for each language
+            for csv_col, lang_code in language_map.items():
+                if csv_col in df.columns and not pd.isna(row.get(csv_col, '')):
+                    translations[lang_code][original_text] = row[csv_col]
         
         return translations
+        
     except FileNotFoundError:
         raise FileNotFoundError(f"Human values translation file not found: {file_path}")
-    except json.JSONDecodeError:
-        raise ValueError(f"Invalid JSON in human values translation file: {file_path}")
+    except Exception as e:
+        raise ValueError(f"Error loading human values translation CSV file: {e}")
 
 
 def validate_dataset(dataset: Dict[str, Any]) -> Tuple[bool, List[str]]:

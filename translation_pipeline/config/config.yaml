@@ -13,14 +13,14 @@ languages:
   - hindi
   - spanish
   - french
-  - german
+  - chinese
 
 # File paths
-dataset_path: "data/blip_laion_cc_sbu_558k.json"                # Path to the original dataset
-human_values_translation_path: "data/human_values_translation.json"  # Path to human values translations
+dataset_path: "data/blip_laion_cc_sbu_100.json"                # Path to the original dataset
+human_values_translation_path: "data/pretraining_human_value_translations.csv"  # Path to human values translations
 error_log_path: "logs/error.log"                               # Path for error logs
 log_path: "logs/translation.log"                               # Path for general logs
-sample_dataset_path: "data/sample_dataset.json"                # Path to sample dataset for batch size calculation
+sample_dataset_path: "data/blip_laion_cc_sbu_100.json"                # Path to sample dataset for batch size calculation
 output_dir: "output"                                           # Directory for output files
 
 # Optional parameters
