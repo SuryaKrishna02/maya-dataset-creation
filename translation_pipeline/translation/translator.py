@@ -21,8 +21,8 @@ from utils.data_loader import (
     get_resume_point
 )
 
-# Import the Cohere API translator
-from translation.cohere_api_translator import CohereTranslationManager, create_translation_manager
+# Import the simplified Cohere API translator
+from translation.cohere_api_translator import create_translation_manager
 
 
 class Translator:
@@ -524,12 +524,13 @@ class Translator:
             )
             return False
     
-    async def translate_dataset_for_language_async(self, language: str) -> bool:
+    async def translate_dataset_for_language_async(self, language: str, resume: bool = False) -> bool:
         """
         Translate the entire dataset for a specific language using Cohere API.
         
         Args:
             language: Language to translate to
+            resume: Whether to resume from the last checkpoint
             
         Returns:
             Whether the translation was successful
@@ -541,46 +542,30 @@ class Translator:
             dataset = load_dataset(self.config.dataset_path)
             
             # Create batches
-            batch_size = self.config.optimal_batch_size or 8  # Default to 8 if not specified
+            batch_size = self.cohere_manager.translator.rate_limit
             batches = create_batches(dataset, batch_size)
             
             total_batches = len(batches)
             self.logger.info(f"Created {total_batches} batches with batch size {batch_size}")
             
             # Check if we need to resume from a previous point
-            current_batch, _ = get_resume_point(self.state_file, language)
-            if current_batch is not None:
-                self.logger.info(f"Resuming translation for {language} from batch {current_batch+1}")
-                start_batch = current_batch + 1
-            else:
-                start_batch = 0
+            start_batch = 0
+            if resume:
+                current_batch, _ = get_resume_point(self.state_file, language)
+                if current_batch is not None:
+                    self.logger.info(f"Resuming translation for {language} from batch {current_batch+1}")
+                    start_batch = current_batch + 1
             
-            # Process batches with asyncio
-            success = True
-            
-            # Use asyncio.gather to process batches concurrently, but control the concurrency
-            # Process batches in groups to avoid overwhelming memory
-            group_size = min(5, total_batches - start_batch)  # Process 5 batches at a time
-            for i in range(start_batch, total_batches, group_size):
-                end_idx = min(i + group_size, total_batches)
-                batch_indices = list(range(i, end_idx))
-                
-                # Create tasks for this group of batches
-                tasks = [
-                    self.translate_batch_for_language_async(
-                        language,
-                        batches[idx],
-                        idx + 1,  # 1-indexed batch number for logging
-                        total_batches
-                    )
-                    for idx in batch_indices
-                ]
-                
-                # Execute tasks for this group
-                results = await asyncio.gather(*tasks)
-                
-                if not all(results):
-                    success = False
+            # Process batches with the simplified Cohere manager
+            success = await self.cohere_manager.process_language_with_batches(
+                language,
+                batches,
+                total_batches,
+                start_batch,
+                self.state_file,
+                self.config.intermediate_dir,
+                self.human_translations
+            )
             
             return success
             
@@ -638,8 +623,7 @@ class Translator:
         except Exception as e:
             self.logger.error(f"Error translating dataset for {language}: {e}")
             return False
-
-
+        
 # Main function to translate the entire dataset
 def translate_dataset(config: TranslationConfig, logger: TranslationLogger, resume: bool = False) -> Dict[str, bool]:
     """
