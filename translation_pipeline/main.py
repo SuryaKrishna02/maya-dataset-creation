@@ -9,14 +9,12 @@ and provides a command-line interface for running the pipeline.
 import os
 import sys
 import time
-import torch
 import argparse
 from datetime import datetime
 from utils.config import load_config
 from utils.logger import setup_logger
 from translation.translator import translate_dataset
 from translation.output_processor import process_output
-from utils.batch_optimizer import calculate_optimal_batch_size
 
 
 def parse_arguments():
@@ -57,15 +55,31 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def check_system_requirements():
-    """Check if the system meets the requirements for running the pipeline."""
-    # Check CUDA availability for GPU support
-    if not torch.cuda.is_available():
-        print("WARNING: CUDA is not available. Running on CPU will be very slow.")
-        return False
+def check_system_requirements(config):
+    """
+    Check if the system meets the requirements for running the pipeline.
     
-    # Check available memory
-    if torch.cuda.is_available():
+    Args:
+        config: Configuration object
+    
+    Returns:
+        Whether the system meets the requirements
+    """
+    # Skip GPU checks if using Cohere API
+    if getattr(config, "use_cohere_api", False):
+        print("Using Cohere API for translation, skipping GPU requirements check.")
+        return True
+    
+    # Only import torch if not using Cohere API
+    try:
+        import torch
+        
+        # Check CUDA availability for GPU support
+        if not torch.cuda.is_available():
+            print("WARNING: CUDA is not available. Running on CPU will be very slow.")
+            return False
+        
+        # Check available memory
         device = torch.device("cuda:0")
         total_memory = torch.cuda.get_device_properties(device).total_memory
         total_memory_gb = total_memory / (1024 ** 3)
@@ -75,6 +89,11 @@ def check_system_requirements():
         if total_memory_gb < 8:
             print("WARNING: Low GPU memory. This may cause out-of-memory errors.")
             return False
+            
+    except ImportError:
+        print("WARNING: PyTorch is not installed. Cannot check GPU requirements.")
+        print("If not using Cohere API, please install PyTorch with CUDA support.")
+        return False
     
     return True
 
@@ -95,10 +114,19 @@ def initialize_pipeline(args):
     # Log system info
     log.info(f"Starting translation pipeline at {datetime.now().isoformat()}")
     log.info(f"Python version: {sys.version}")
-    log.info(f"PyTorch version: {torch.__version__}")
-    log.info(f"CUDA available: {torch.cuda.is_available()}")
-    if torch.cuda.is_available():
-        log.info(f"CUDA device: {torch.cuda.get_device_name(0)}")
+    
+    # Log GPU info only if not using Cohere API
+    if not getattr(config, "use_cohere_api", False):
+        try:
+            import torch
+            log.info(f"PyTorch version: {torch.__version__}")
+            log.info(f"CUDA available: {torch.cuda.is_available()}")
+            if torch.cuda.is_available():
+                log.info(f"CUDA device: {torch.cuda.get_device_name(0)}")
+        except ImportError:
+            log.warning("PyTorch not installed. No GPU info available.")
+    else:
+        log.info("Using Cohere API for translation, not using GPU.")
     
     # Filter languages if specified
     if args.language:
@@ -130,27 +158,42 @@ def optimize_batch_size(config, logger, args):
         log.info(f"Using batch size from config: {config.optimal_batch_size}")
         return
     
-    # Calculate optimal batch size
-    log.info("Calculating optimal batch size...")
+    # If using Cohere API, set a reasonable default batch size
+    if getattr(config, "use_cohere_api", False):
+        default_batch_size = 16  # Higher default for API usage
+        log.info(f"Using default batch size for Cohere API: {default_batch_size}")
+        config.optimal_batch_size = default_batch_size
+        return
     
+    # Only import the batch optimizer if needed
     try:
-        sample_language = config.languages[0]
+        from utils.batch_optimizer import calculate_optimal_batch_size
         
-        batch_size = calculate_optimal_batch_size(
-            model_name=config.model_name,
-            language=sample_language,
-            sample_dataset_path=config.sample_dataset_path,
-            precision=config.precision,
-            hf_access_token=config.hf_access_token,
-            logger=logger
-        )
+        # Calculate optimal batch size
+        log.info("Calculating optimal batch size...")
         
-        config.optimal_batch_size = batch_size
-        log.info(f"Calculated optimal batch size: {batch_size}")
-        
-    except Exception as e:
-        log.error(f"Error calculating optimal batch size: {e}")
-        log.info("Using default batch size of 4")
+        try:
+            sample_language = config.languages[0]
+            
+            batch_size = calculate_optimal_batch_size(
+                model_name=config.model_name,
+                language=sample_language,
+                sample_dataset_path=config.sample_dataset_path,
+                precision=config.precision,
+                hf_access_token=config.hf_access_token,
+                logger=logger
+            )
+            
+            config.optimal_batch_size = batch_size
+            log.info(f"Calculated optimal batch size: {batch_size}")
+            
+        except Exception as e:
+            log.error(f"Error calculating optimal batch size: {e}")
+            log.info("Using default batch size of 4")
+            config.optimal_batch_size = 4
+            
+    except ImportError:
+        log.warning("Batch optimizer not available. Using default batch size.")
         config.optimal_batch_size = 4
 
 
@@ -168,7 +211,8 @@ def run_translation(config, logger, args):
     
     try:
         start_time = time.time()
-        results = translate_dataset(config, logger)
+        # Use the translate_dataset function with the resume parameter from args
+        results = translate_dataset(config, logger, args.resume)
         end_time = time.time()
         
         # Log results
@@ -220,17 +264,17 @@ def main():
     # Parse arguments
     args = parse_arguments()
     
+    # Initialize pipeline
+    config, logger = initialize_pipeline(args)
+    log = logger.get_logger()
+    
     # Check system requirements
-    system_ok = check_system_requirements()
+    system_ok = check_system_requirements(config)
     if not system_ok:
         print("System does not meet all requirements. Continue anyway? (y/n)")
         response = input().lower()
         if response != 'y':
             sys.exit(1)
-    
-    # Initialize pipeline
-    config, logger = initialize_pipeline(args)
-    log = logger.get_logger()
     
     try:
         # Optimize batch size

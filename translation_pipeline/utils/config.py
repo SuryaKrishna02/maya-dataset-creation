@@ -1,8 +1,7 @@
 """
-Configuration module for the translation pipeline.
+Configuration updates for Cohere API integration.
 
-This module handles loading and validating configuration settings from a YAML file
-and environment variables for the translation pipeline.
+This module adds support for Cohere API configuration in the translation pipeline.
 """
 
 import os
@@ -13,13 +12,13 @@ from dotenv import load_dotenv
 from dataclasses import dataclass
 from typing import List, Optional
 
+
 # Load environment variables from .env file
 load_dotenv()
 
-
 @dataclass
 class TranslationConfig:
-    """Configuration class for translation pipeline parameters."""
+    """Updated configuration class for translation pipeline parameters with Cohere API support."""
     
     # Model parameters
     model_name: str
@@ -49,10 +48,15 @@ class TranslationConfig:
     do_sample: bool = True
     optimal_batch_size: Optional[int] = None
     
+    # Cohere API parameters
+    use_cohere_api: bool = False
+    cohere_model: str = "c4ai-aya-expanse-32b"
+    
     def __post_init__(self):
         """Validate and process configuration after initialization."""
+        # Parent validation logic remains unchanged
         # Get HF token from environment if not provided
-        if not self.hf_access_token:
+        if not self.hf_access_token and not self.use_cohere_api:
             self.hf_access_token = os.environ.get("HF_ACCESS_TOKEN")
             if not self.hf_access_token:
                 raise ValueError("HuggingFace access token not found in config or environment variables")
@@ -65,7 +69,7 @@ class TranslationConfig:
 
 def load_config(config_path: str) -> TranslationConfig:
     """
-    Load configuration from a YAML file.
+    Load configuration from a YAML file with Cohere API support.
     
     Args:
         config_path: Path to the YAML configuration file

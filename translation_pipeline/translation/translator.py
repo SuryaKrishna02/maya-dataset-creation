@@ -1,16 +1,16 @@
 """
 Translator module for the translation pipeline.
 
-This module handles the translation process using the provided model and configurations.
+This module handles the translation process using the provided model and configurations,
+with support for both local models and the Cohere API.
 """
 
 import os
 import time
-import torch
-from typing import List, Dict, Any
+import asyncio
+from typing import List, Dict, Any, Optional
 from utils.config import TranslationConfig
 from utils.logger import TranslationLogger
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from utils.prompt_templates import format_prompt, get_prompt_for_language
 from utils.data_loader import (
     load_dataset, 
@@ -20,6 +20,9 @@ from utils.data_loader import (
     save_progress_state,
     get_resume_point
 )
+
+# Import the Cohere API translator
+from translation.cohere_api_translator import CohereTranslationManager, create_translation_manager
 
 
 class Translator:
@@ -44,15 +47,66 @@ class Translator:
         # State file for tracking progress
         self.state_file = os.path.join(self.config.output_dir, "translation_state.json")
         
-        # Load model and tokenizer
-        self._load_model()
+        # Check if we should use Cohere API or local model
+        self.use_cohere_api = getattr(self.config, "use_cohere_api", False)
+        
+        # Initialize the appropriate translation method
+        if self.use_cohere_api:
+            self._init_cohere_api()
+        else:
+            self._load_model()
         
         # Load translations for human values
         self._load_human_translations()
     
+    def _init_cohere_api(self):
+        """Initialize the Cohere API translator."""
+        self.logger.info("Initializing Cohere API translator...")
+        
+        # Get API keys from environment variables
+        from dotenv import load_dotenv
+        import os
+        
+        # Load environment variables from .env file
+        load_dotenv()
+        
+        api_keys = []
+        
+        # Try to get comma-separated API keys from COHERE_API_KEYS
+        env_keys = os.environ.get("COHERE_API_KEYS")
+        if env_keys:
+            # Split by comma and strip whitespace
+            api_keys.extend([key.strip() for key in env_keys.split(',') if key.strip()])
+        
+        # Also check individual API key variables for backward compatibility
+        main_key = os.environ.get("COHERE_API_KEY")
+        if main_key and main_key not in api_keys:
+            api_keys.append(main_key)
+        
+        # Check for additional API keys (COHERE_API_KEY_1, COHERE_API_KEY_2, etc.)
+        i = 1
+        while True:
+            key = os.environ.get(f"COHERE_API_KEY_{i}")
+            if key and key not in api_keys:
+                api_keys.append(key)
+                i += 1
+            else:
+                break
+        
+        if not api_keys:
+            raise ValueError("No Cohere API keys found in environment variables. "
+                            "Please set COHERE_API_KEYS with comma-separated keys in your .env file.")
+        
+        self.logger.info(f"Found {len(api_keys)} Cohere API key(s)")
+        self.cohere_manager = create_translation_manager(api_keys, self.logger)
+    
     def _load_model(self):
         """Load the model and tokenizer."""
         self.logger.info(f"Loading model: {self.config.model_name}")
+        
+        # Dynamically import required modules for local model
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
         
         # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -109,6 +163,34 @@ class Translator:
             self.logger.error(f"Error loading human values translations: {e}")
             self.human_translations = {}
             self.logger.info("Expected CSV format should have columns: 'English Sentence', 'Hindi Translation', 'Spanish Translation', etc.")
+    
+    async def translate_batch_async(
+        self,
+        batch: List[Dict[str, Any]],
+        language: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Translate a batch of entries asynchronously using Cohere API.
+        
+        Args:
+            batch: Batch of entries to translate
+            language: Language to translate to
+            
+        Returns:
+            Batch of translated entries
+        """
+        # Get prompt template for the language
+        prompt_template = get_prompt_for_language(language)
+        if not prompt_template:
+            self.logger.error(f"No prompt template found for language: {language}")
+            return batch
+        
+        # Use the Cohere API to translate the batch
+        translated_batch = await self.cohere_manager.translate_batch_for_language(
+            batch, language, prompt_template
+        )
+        
+        return translated_batch
     
     def translate_batch(
         self,
@@ -277,6 +359,10 @@ class Translator:
             Translated text
         """
         try:
+            # Import required modules dynamically
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            
             # Format the prompt
             messages = format_prompt(prompt_template, text)
             
@@ -323,6 +409,63 @@ class Translator:
             self.logger.error(f"Error translating text: {e}")
             self.logger.error(f"Original text: {text}")
             return text  # Return original text on error
+    
+    async def translate_batch_for_language_async(
+        self,
+        language: str,
+        batch_data: List[Dict[str, Any]],
+        batch_num: int,
+        total_batches: int
+    ) -> bool:
+        """
+        Translate a batch for a specific language and save to file using Cohere API.
+        
+        Args:
+            language: Language to translate to
+            batch_data: Batch data to translate
+            batch_num: Batch number
+            total_batches: Total number of batches
+            
+        Returns:
+            Whether the translation was successful
+        """
+        try:
+            self.logger.info(f"Translating batch {batch_num}/{total_batches} for {language} using Cohere API")
+            
+            # Translate the batch
+            translated_batch = await self.translate_batch_async(batch_data, language)
+            
+            # Save the translated batch
+            save_batch_to_json(
+                translated_batch,
+                self.config.intermediate_dir,
+                language,
+                batch_num
+            )
+            
+            # Update progress state
+            save_progress_state(
+                self.state_file,
+                language,
+                batch_num,
+                total_batches,
+                "completed"
+            )
+            
+            self.logger.info(f"Batch {batch_num}/{total_batches} for {language} completed")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error translating batch {batch_num} for {language}: {e}")
+            # Update progress state
+            save_progress_state(
+                self.state_file,
+                language,
+                batch_num,
+                total_batches,
+                "error"
+            )
+            return False
     
     def translate_batch_for_language(
         self,
@@ -381,9 +524,9 @@ class Translator:
             )
             return False
     
-    def translate_dataset_for_language(self, language: str) -> bool:
+    async def translate_dataset_for_language_async(self, language: str) -> bool:
         """
-        Translate the entire dataset for a specific language.
+        Translate the entire dataset for a specific language using Cohere API.
         
         Args:
             language: Language to translate to
@@ -391,7 +534,7 @@ class Translator:
         Returns:
             Whether the translation was successful
         """
-        self.logger.info(f"Starting translation for language: {language}")
+        self.logger.info(f"Starting translation for language: {language} using Cohere API")
         
         try:
             # Load dataset
@@ -412,6 +555,71 @@ class Translator:
             else:
                 start_batch = 0
             
+            # Process batches with asyncio
+            success = True
+            
+            # Use asyncio.gather to process batches concurrently, but control the concurrency
+            # Process batches in groups to avoid overwhelming memory
+            group_size = min(5, total_batches - start_batch)  # Process 5 batches at a time
+            for i in range(start_batch, total_batches, group_size):
+                end_idx = min(i + group_size, total_batches)
+                batch_indices = list(range(i, end_idx))
+                
+                # Create tasks for this group of batches
+                tasks = [
+                    self.translate_batch_for_language_async(
+                        language,
+                        batches[idx],
+                        idx + 1,  # 1-indexed batch number for logging
+                        total_batches
+                    )
+                    for idx in batch_indices
+                ]
+                
+                # Execute tasks for this group
+                results = await asyncio.gather(*tasks)
+                
+                if not all(results):
+                    success = False
+            
+            return success
+            
+        except Exception as e:
+            self.logger.error(f"Error translating dataset for {language}: {e}")
+            return False
+            
+    def translate_dataset_for_language(self, language: str, resume: bool = False) -> bool:
+        """
+        Translate the entire dataset for a specific language.
+        
+        Args:
+            language: Language to translate to
+            resume: Whether to resume from the last checkpoint
+            
+        Returns:
+            Whether the translation was successful
+        """
+        self.logger.info(f"Starting translation for language: {language}")
+        
+        try:
+            # Load dataset
+            dataset = load_dataset(self.config.dataset_path)
+            
+            # Create batches
+            batch_size = self.config.optimal_batch_size or 8  # Default to 8 if not specified
+            batches = create_batches(dataset, batch_size)
+            
+            total_batches = len(batches)
+            self.logger.info(f"Created {total_batches} batches with batch size {batch_size}")
+            
+            # Check if we need to resume from a previous point
+            start_batch = 0
+            if resume:
+                current_batch, _ = get_resume_point(self.state_file, language)
+                if current_batch is not None:
+                    self.logger.info(f"Resuming translation for {language} from batch {current_batch+1}")
+                    start_batch = current_batch + 1
+            
             # Process each batch
             success = True
             for i in range(start_batch, total_batches):
@@ -424,52 +632,81 @@ class Translator:
                 
                 if not batch_success:
                     success = False
-                
-                # Add a small delay between batches to prevent rate limiting
-                if i < total_batches - 1:
-                    time.sleep(1)
             
             return success
             
         except Exception as e:
             self.logger.error(f"Error translating dataset for {language}: {e}")
             return False
-    
-    def translate_dataset(self) -> Dict[str, bool]:
-        """
-        Translate the dataset for all languages.
-        
-        Returns:
-            Dictionary mapping languages to success status
-        """
-        self.logger.info("Starting dataset translation for all languages")
-        
-        results = {}
-        
-        for language in self.config.languages:
-            self.logger.info(f"Processing language: {language}")
-            success = self.translate_dataset_for_language(language)
-            results[language] = success
-            
-            # Log overall result for this language
-            if success:
-                self.logger.info(f"Successfully translated dataset for {language}")
-            else:
-                self.logger.warning(f"Translation for {language} completed with errors")
-        
-        return results
 
 
-def translate_dataset(config: TranslationConfig, logger: TranslationLogger) -> Dict[str, bool]:
+# Main function to translate the entire dataset
+def translate_dataset(config: TranslationConfig, logger: TranslationLogger, resume: bool = False) -> Dict[str, bool]:
     """
-    Translate the dataset using the provided configuration.
+    Translate the entire dataset for all languages in the configuration.
     
     Args:
         config: Configuration object
         logger: Logger object
+        resume: Whether to resume from the last checkpoint
         
     Returns:
         Dictionary mapping languages to success status
     """
+    log = logger.get_logger()
+    log.info("Starting dataset translation")
+    
+    # Initialize translator
     translator = Translator(config, logger)
-    return translator.translate_dataset()
+    
+    # Check if using Cohere API
+    if getattr(config, "use_cohere_api", False):
+        log.info("Using Cohere API for translation")
+        return asyncio.run(_translate_with_cohere_api(translator, config.languages, resume))
+    else:
+        log.info("Using local model for translation")
+        return _translate_with_local_model(translator, config.languages, resume)
+
+
+async def _translate_with_cohere_api(translator: Translator, languages: List[str], resume: bool) -> Dict[str, bool]:
+    """
+    Translate the dataset using Cohere API (async).
+    
+    Args:
+        translator: Translator object
+        languages: List of languages to translate to
+        resume: Whether to resume from the last checkpoint
+        
+    Returns:
+        Dictionary mapping languages to success status
+    """
+    results = {}
+    
+    # Process each language
+    for language in languages:
+        success = await translator.translate_dataset_for_language_async(language)
+        results[language] = success
+    
+    return results
+
+
+def _translate_with_local_model(translator: Translator, languages: List[str], resume: bool) -> Dict[str, bool]:
+    """
+    Translate the dataset using local model.
+    
+    Args:
+        translator: Translator object
+        languages: List of languages to translate to
+        resume: Whether to resume from the last checkpoint
+        
+    Returns:
+        Dictionary mapping languages to success status
+    """
+    results = {}
+    
+    # Process each language
+    for language in languages:
+        success = translator.translate_dataset_for_language(language, resume)
+        results[language] = success
+    
+    return results

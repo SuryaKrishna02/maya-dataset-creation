@@ -1,22 +1,22 @@
 # Translation Pipeline Configuration
 
 # Model parameters
-model_name: "CohereForAI/aya-expanse-32b"  # Model to use for translation
-temperature: 0.1                          # Temperature for generation (lower = more deterministic)
-precision: "float16"                      # Precision to load the model with (float16, float32)
+model_name: "CohereForAI/aya-expanse-32b"  # Model to use for translation (HuggingFace model path)
+temperature: 0.1                           # Temperature for generation (lower = more deterministic)
+precision: "float16"                       # Precision to load the model with (float16, float32)
 
 # Processing mode
-batch_processing: true                    # Whether to use batch processing
+batch_processing: true                     # Whether to use batch processing
 
 # Languages to translate to
 languages:
   - hindi
-  - spanish
-  - french
-  - chinese
+  # - spanish
+  # - french
+  # - chinese
 
 # File paths
-dataset_path: "data/blip_laion_cc_sbu_100.json"                # Path to the original dataset
+dataset_path: "data/blip_laion_cc_sbu_1820.json"                # Path to the original dataset
 human_values_translation_path: "data/pretraining_human_value_translations.csv"  # Path to human values translations
 error_log_path: "logs/error.log"                               # Path for error logs
 log_path: "logs/translation.log"                               # Path for general logs
@@ -26,4 +26,9 @@ output_dir: "output"                                           # Directory for o
 # Optional parameters
 max_new_tokens: 100                       # Maximum number of new tokens to generate
 do_sample: true                           # Whether to use sampling for generation
-optimal_batch_size: null                  # Batch size (null for automatic calculation)
+optimal_batch_size: 16                    # Batch size (set higher for Cohere API since parallelization is handled)
+
+# Cohere API configuration
+use_cohere_api: true                      # Set to true to use Cohere API instead of local model
+cohere_model: "c4ai-aya-expanse-32b"      # Cohere model to use
+# Note: API keys should be set in the .env file using COHERE_API_KEYS=key1,key2,key3
