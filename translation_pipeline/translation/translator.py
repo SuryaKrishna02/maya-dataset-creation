@@ -6,9 +6,9 @@ with support for both local models and the Cohere API.
 """
 
 import os
-import time
 import asyncio
-from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+from typing import List, Dict, Any
 from utils.config import TranslationConfig
 from utils.logger import TranslationLogger
 from utils.prompt_templates import format_prompt, get_prompt_for_language
@@ -62,10 +62,6 @@ class Translator:
     def _init_cohere_api(self):
         """Initialize the Cohere API translator."""
         self.logger.info("Initializing Cohere API translator...")
-        
-        # Get API keys from environment variables
-        from dotenv import load_dotenv
-        import os
         
         # Load environment variables from .env file
         load_dotenv()

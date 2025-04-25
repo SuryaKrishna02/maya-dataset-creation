@@ -11,12 +11,12 @@ batch_processing: true                     # Whether to use batch processing
 # Languages to translate to
 languages:
   - hindi
-  # - spanish
-  # - french
-  # - chinese
+  - spanish
+  - french
+  - chinese
 
 # File paths
-dataset_path: "data/blip_laion_cc_sbu_1820.json"                # Path to the original dataset
+dataset_path: "data/blip_laion_cc_sbu_1812.json"                # Path to the original dataset
 human_values_translation_path: "data/pretraining_human_value_translations.csv"  # Path to human values translations
 error_log_path: "logs/error.log"                               # Path for error logs
 log_path: "logs/translation.log"                               # Path for general logs
