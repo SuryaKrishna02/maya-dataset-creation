@@ -17,146 +17,47 @@ class Prompt:
 
 
 # Constant for message placeholder
-MESSAGE_PLACEHOLDER = "{message}"
+MESSAGE_PLACEHOLDER = "Input Text: {message}"
+SYSTEM_PLACEHOLDER = dedent("""
+                ## You are an expert translator. Translate the following text into {target_language} by breaking down the task step by step. Think briefly, then provide the final translation. (Note: In the final output, only the final translation should be output.)
+
+                Note: Do not include any explanations or reasoning.
+
+                ###Instructions to follow before translation:
+                1. Identify the key objects, attributes, and context of the text.
+                2. Decide on the best translation for each component.
+                3. Assemble the components, ensuring the structure and tone match the original.
+
+                Output Format:
+                ```json
+                {{
+                    "translated_text": "<Translation in {target_language}>"
+                }}
+                ```
+""")
 
 
 # Hindi translation prompt
 HINDI_PROMPT = Prompt(
-    system_msg=dedent("""
-                ## Instructions
-                You are an expert in translations. Your job is to translate the input to Hindi in the given chat.
-                Ensure that:
-                - **Object Recognition**: Identify and translate objects accurately.
-                - **Accurate Translation**: Maintain the meaning and context of the original text.
-                - **Attribute Detection**: Translate attributes like colors, sizes, and types correctly.
-                - **Scene Understanding**: Ensure the translation makes sense within the given scene or context.
-                - **Format Consistency**: Follow the same order and structure as the original text.
-                - **Handling Special Characters**: Retain special characters or terms that do not have a direct translation.
-                - **Context Sensitivity**: Consider cultural context if necessary for more nuanced translations.
-                - **Error Handling**: If a word or phrase cannot be translated directly, provide the best possible equivalent in Hindi.
-                Note: The output must be only expected output always.
-                ## Examples
-                ### Example 1
-                Input:       
-                select luxury furniture 3 - inch gel memory foam mattress topper
-                Expected Output:
-                लक्जरी फर्नीचर 3-इंच जेल मेमोरी फोम गद्दा टॉपर चुनें
-                ### Example 2
-                Input:
-                buy blue cotton shirt for men
-                Expected Output:
-                पुरुषों के लिए नीली कॉटन शर्ट खरीदें
-                ### Example 3
-                Input:
-                order a medium-sized pepperoni pizza
-                Expected Output:
-                मीडियम साइज पेपरोनी पिज्जा ऑर्डर करें 
-                """),
+    system_msg=SYSTEM_PLACEHOLDER,
     user_msg=MESSAGE_PLACEHOLDER
 )
 
 # Spanish translation prompt
 SPANISH_PROMPT = Prompt(
-    system_msg=dedent("""
-                ## Instructions
-                You are an expert in translations. Your job is to translate the input to Spanish in the given chat.
-                Ensure that:
-                - **Object Recognition**: Identify and translate objects accurately.
-                - **Accurate Translation**: Maintain the meaning and context of the original text.
-                - **Attribute Detection**: Translate attributes like colors, sizes, and types correctly.
-                - **Scene Understanding**: Ensure the translation makes sense within the given scene or context.
-                - **Format Consistency**: Follow the same order and structure as the original text.
-                - **Handling Special Characters**: Retain special characters or terms that do not have a direct translation.
-                - **Context Sensitivity**: Consider cultural context if necessary for more nuanced translations.
-                - **Error Handling**: If a word or phrase cannot be translated directly, provide the best possible equivalent in Spanish.
-                Note: The output must be only expected output always.
-                ## Examples
-                ### Example 1
-                Input:       
-                select luxury furniture 3 - inch gel memory foam mattress topper
-                Expected Output:
-                seleccionar colchón de lujo con capa de espuma de memoria de gel de 3 pulgadas
-                ### Example 2
-                Input:
-                buy blue cotton shirt for men
-                Expected Output:
-                comprar camisa azul de algodón para hombres
-                ### Example 3
-                Input:
-                order a medium-sized pepperoni pizza
-                Expected Output:
-                ordenar una pizza mediana de pepperoni
-                """),
+    system_msg=SYSTEM_PLACEHOLDER,
     user_msg=MESSAGE_PLACEHOLDER
 )
 
 # French translation prompt
 FRENCH_PROMPT = Prompt(
-    system_msg=dedent("""
-                ## Instructions
-                You are an expert in translations. Your job is to translate the input to French in the given chat.
-                Ensure that:
-                - **Object Recognition**: Identify and translate objects accurately.
-                - **Accurate Translation**: Maintain the meaning and context of the original text.
-                - **Attribute Detection**: Translate attributes like colors, sizes, and types correctly.
-                - **Scene Understanding**: Ensure the translation makes sense within the given scene or context.
-                - **Format Consistency**: Follow the same order and structure as the original text.
-                - **Handling Special Characters**: Retain special characters or terms that do not have a direct translation.
-                - **Context Sensitivity**: Consider cultural context if necessary for more nuanced translations.
-                - **Error Handling**: If a word or phrase cannot be translated directly, provide the best possible equivalent in French.
-                Note: The output must be only expected output always.
-                ## Examples
-                ### Example 1
-                Input:       
-                select luxury furniture 3 - inch gel memory foam mattress topper
-                Expected Output:
-                sélectionner un surmatelas de luxe en mousse à mémoire de forme gel de 3 pouces
-                ### Example 2
-                Input:
-                buy blue cotton shirt for men
-                Expected Output:
-                acheter une chemise bleue en coton pour hommes
-                ### Example 3
-                Input:
-                order a medium-sized pepperoni pizza
-                Expected Output:
-                commander une pizza au pepperoni de taille moyenne
-                """),
+    system_msg=SYSTEM_PLACEHOLDER,
     user_msg=MESSAGE_PLACEHOLDER
 )
 
 # Chinese translation prompt
 CHINESE_PROMPT = Prompt(
-    system_msg=dedent("""
-                ## Instructions
-                You are an expert in translations. Your job is to translate the input to Chinese in the given chat.
-                Ensure that:
-                - **Object Recognition**: Identify and translate objects accurately.
-                - **Accurate Translation**: Maintain the meaning and context of the original text.
-                - **Attribute Detection**: Translate attributes like colors, sizes, and types correctly.
-                - **Scene Understanding**: Ensure the translation makes sense within the given scene or context.
-                - **Format Consistency**: Follow the same order and structure as the original text.
-                - **Handling Special Characters**: Retain special characters or terms that do not have a direct translation.
-                - **Context Sensitivity**: Consider cultural context if necessary for more nuanced translations.
-                - **Error Handling**: If a word or phrase cannot be translated directly, provide the best possible equivalent in German.
-                Note: The output must be only expected output always.
-                ## Examples
-                ### Example 1
-                Input:       
-                select luxury furniture 3 - inch gel memory foam mattress topper
-                Expected Output:
-                Wählen Sie einen 3-Zoll-Gel-Memory-Foam-Matratzenauflage für Luxusmöbel
-                ### Example 2
-                Input:
-                buy blue cotton shirt for men
-                Expected Output:
-                Blaues Baumwollhemd für Männer kaufen
-                ### Example 3
-                Input:
-                order a medium-sized pepperoni pizza
-                Expected Output:
-                Eine mittelgroße Pepperoni-Pizza bestellen
-                """),
+    system_msg=SYSTEM_PLACEHOLDER,
     user_msg=MESSAGE_PLACEHOLDER
 )
 
@@ -167,7 +68,6 @@ LANGUAGE_PROMPTS = {
     "french": FRENCH_PROMPT,
     "chinese": CHINESE_PROMPT,
 }
-
 
 def get_prompt_for_language(language: str) -> Optional[Prompt]:
     """

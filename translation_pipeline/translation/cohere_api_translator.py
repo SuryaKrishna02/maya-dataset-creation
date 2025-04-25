@@ -11,6 +11,7 @@ import asyncio
 import logging
 from ratelimit import limits, sleep_and_retry
 from typing import List, Dict, Any, Optional
+from utils.data_loader import extract_json_from_string
 
 class SimpleCohereTranslator:
     """Simplified translator using Cohere API with ratelimit library."""
@@ -62,8 +63,10 @@ class SimpleCohereTranslator:
                     temperature=0.1,
                 )
                 
-                # Extract translated text
-                return response.message.content[0].text
+                response_text = response.message.content[0].text
+                extracted_json = extract_json_from_string(response_text)
+                translated_text = extracted_json["translated_text"]
+                return translated_text
                     
             except Exception as e:
                 self.logger.error(f"Error translating with key {api_key[:5]}...: {e}")
@@ -179,7 +182,7 @@ class SimpleCohereTranslationManager:
         # Extract system prompt if available
         system_prompt = None
         if prompt_template and hasattr(prompt_template, 'system_msg'):
-            system_prompt = prompt_template.system_msg
+            system_prompt = prompt_template.system_msg.format(target_language=language)
         
         # Collect all GPT values and their positions across the entire batch
         all_gpt_texts = []

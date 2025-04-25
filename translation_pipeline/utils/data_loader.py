@@ -5,6 +5,7 @@ This module handles loading and processing data for the translation pipeline.
 """
 
 import os
+import re
 import json
 import logging
 import pandas as pd
@@ -200,6 +201,24 @@ def extract_human_values(dataset: List[Dict[str, Any]]) -> List[str]:
                     human_values.add(conv.get('value', ''))
     
     return list(human_values)
+
+def extract_json_from_string(text):
+    # Replace single quotes with double quotes for JSON compatibility
+    text = text.replace("'", '"')
+    
+    # Try to find JSON objects (starting with { and ending with })
+    pattern = r'{[^{}]*(?:{[^{}]*}[^{}]*)*}'
+    matches = re.findall(pattern, text)
+    
+    for potential_json in matches:
+        try:
+            # Try to parse as JSON
+            json_obj = json.loads(potential_json)
+            return json_obj
+        except json.JSONDecodeError:
+            continue
+    
+    return None
 
 
 def extract_gpt_values(dataset: List[Dict[str, Any]]) -> List[str]:
