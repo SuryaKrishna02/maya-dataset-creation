@@ -218,7 +218,17 @@ def extract_json_from_string(text):
         except json.JSONDecodeError:
             continue
     
-    return None
+    if "json" in text:
+        for char in ["```", "json", "{", "}", ":", '"', "translated_text"]:
+            text = text.replace(char, "")
+        
+        # Remove leading/trailing whitespace
+        cleaned_text = text.strip()
+        
+        # Return as a dictionary with the cleaned text
+        return {"translated_text": cleaned_text}
+    else:
+        return {"translated_text": f"<Translation Failure> {text}"}
 
 
 def extract_gpt_values(dataset: List[Dict[str, Any]]) -> List[str]:

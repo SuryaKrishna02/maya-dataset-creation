@@ -36,6 +36,7 @@ class SimpleCohereTranslator:
         
         # Create a rate limited function based on the total available API keys
         self.rate_limited_translate = self._create_rate_limited_function()
+        self.placeholder_error_text = "Placeholder Error Text"
     
     def _create_rate_limited_function(self):
         """Create a rate limited function based on the total available API keys."""
@@ -62,15 +63,15 @@ class SimpleCohereTranslator:
                     messages=messages,
                     temperature=0.1,
                 )
-                
                 response_text = response.message.content[0].text
                 extracted_json = extract_json_from_string(response_text)
                 translated_text = extracted_json["translated_text"]
                 return translated_text
                     
             except Exception as e:
-                self.logger.error(f"Error translating with key {api_key[:5]}...: {e}")
-                return text  # Return original text on error
+                self.logger.error(f"Error translating with key {api_key[:5]}...: {e}\n Input Text: {text} Response: {response}")
+                
+                return self.placeholder_error_text
                 
         return _rate_limited_translate
     
