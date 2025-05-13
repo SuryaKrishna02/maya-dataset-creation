@@ -61,12 +61,138 @@ CHINESE_PROMPT = Prompt(
     user_msg=MESSAGE_PLACEHOLDER
 )
 
+# Arabic translation prompt
+ARABIC_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Italian translation prompt
+ITALIAN_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Portuguese translation prompt
+PORTUGUESE_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Russian translation prompt
+RUSSIAN_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Turkish translation prompt
+TURKISH_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Czech translation prompt
+CZECH_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Dutch translation prompt
+DUTCH_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# German translation prompt
+GERMAN_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Greek translation prompt
+GREEK_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Hebrew translation prompt
+HEBREW_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Indonesian translation prompt
+INDONESIAN_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Japanese translation prompt
+JAPANESE_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Korean translation prompt
+KOREAN_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Persian translation prompt
+PERSIAN_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Polish translation prompt
+POLISH_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Romanian translation prompt
+ROMANIAN_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Ukrainian translation prompt
+UKRAINIAN_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
+# Vietnamese translation prompt
+VIETNAMESE_PROMPT = Prompt(
+    system_msg=SYSTEM_PLACEHOLDER,
+    user_msg=MESSAGE_PLACEHOLDER
+)
+
 # Collection of all prompts
 LANGUAGE_PROMPTS = {
     "hindi": HINDI_PROMPT,
     "spanish": SPANISH_PROMPT,
     "french": FRENCH_PROMPT,
     "chinese": CHINESE_PROMPT,
+    "arabic": ARABIC_PROMPT,
+    "italian": ITALIAN_PROMPT,
+    "portuguese": PORTUGUESE_PROMPT,
+    "russian": RUSSIAN_PROMPT,
+    "turkish": TURKISH_PROMPT,
+    "czech": CZECH_PROMPT,
+    "dutch": DUTCH_PROMPT,
+    "german": GERMAN_PROMPT,
+    "greek": GREEK_PROMPT,
+    "hebrew": HEBREW_PROMPT,
+    "indonesian": INDONESIAN_PROMPT,
+    "japanese": JAPANESE_PROMPT,
+    "korean": KOREAN_PROMPT,
+    "persian": PERSIAN_PROMPT,
+    "polish": POLISH_PROMPT,
+    "romanian": ROMANIAN_PROMPT,
+    "ukrainian": UKRAINIAN_PROMPT,
+    "vietnamese": VIETNAMESE_PROMPT,
 }
 
 def get_prompt_for_language(language: str) -> Optional[Prompt]:

@@ -1,17 +1,11 @@
-"""
-Simplified Cohere API integration module for the translation pipeline.
-
-This module provides functionality to translate text using the Cohere API with the ratelimit
-library for efficient rate limiting across multiple API keys.
-"""
-
 import os
 import cohere
 import asyncio
 import logging
-from ratelimit import limits, sleep_and_retry
 from typing import List, Dict, Any, Optional
-from utils.data_loader import extract_json_from_string
+from ratelimit import limits, sleep_and_retry
+from utils.prompt_templates import get_prompt_for_language
+from utils.data_loader import extract_json_from_string, save_batch_to_json, save_progress_state
 
 class SimpleCohereTranslator:
     """Simplified translator using Cohere API with ratelimit library."""
@@ -28,11 +22,14 @@ class SimpleCohereTranslator:
         self.logger = logger or logging.getLogger(__name__)
         self.clients = {key: cohere.AsyncClientV2(api_key=key) for key in api_keys}
         
-        # Calculate total rate limit
-        self.rate_limit = len(api_keys) * 450
-        self.period = (len(api_keys) + 1) * 30
+        # Calculate total rate limit based on 450 RPM per key
+        # Change from 450 to 430 RPM per key
+        self.per_key_limit = 430  # Added parameter
+        self.rate_limit = len(api_keys) * self.per_key_limit  # Changed calculation
+        self.period = 60
         self.logger.info(f"Initialized with {len(api_keys)} API keys. "
-                         f"Total rate limit: {self.rate_limit} requests/minute.")
+                        f"Total rate limit: {self.rate_limit} requests/minute "
+                        f"({self.per_key_limit}/key).")  # Added per-key info
         
         # Create a rate limited function based on the total available API keys
         self.rate_limited_translate = self._create_rate_limited_function()
@@ -43,36 +40,41 @@ class SimpleCohereTranslator:
         @sleep_and_retry
         @limits(calls=self.rate_limit, period=self.period)
         async def _rate_limited_translate(text: str, language: str, api_key: str, system_prompt: str = None) -> str:
-            try:
-                client = self.clients[api_key]
-                
-                # Default system prompt if not provided
-                if system_prompt is None:
-                    system_prompt = (f"Translate the following text to {language}. "
-                                    f"Only return the translated text, nothing else.")
-                
-                # Create messages for the chat
-                messages = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": text}
-                ]
-                
-                # Make the API call
-                response = await client.chat(
-                    model="c4ai-aya-expanse-32b",
-                    messages=messages,
-                    temperature=0.1,
-                )
-                response_text = response.message.content[0].text
-                extracted_json = extract_json_from_string(response_text)
-                translated_text = extracted_json["translated_text"]
-                return translated_text
+            for attempt in range(3):  # Retry up to 3 times
+                try:
+                    client = self.clients[api_key]
                     
-            except Exception as e:
-                self.logger.error(f"Error translating with key {api_key[:5]}...: {e}\n Input Text: {text} Response: {response}")
-                
-                return self.placeholder_error_text
-                
+                    # Default system prompt if not provided
+                    if system_prompt is None:
+                        system_prompt = (f"Translate the following text to {language}. "
+                                        f"Only return the translated text, nothing else.")
+                        
+                    # Create messages for the chat
+                    messages = [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": text}
+                    ]
+                    
+                    # Make the API call
+                    response = await client.chat(
+                        model="c4ai-aya-expanse-32b",
+                        messages=messages,
+                        temperature=0.1,
+                    )
+                    response_text = response.message.content[0].text
+                    extracted_json = extract_json_from_string(response_text)
+                    translated_text = extracted_json["translated_text"]
+                    return translated_text
+                        
+                except Exception as e:
+                    if attempt < 2:  # Not the last attempt
+                        wait_time = 60  # Wait 60 seconds before retrying
+                        self.logger.warning(f"Attempt {attempt + 1} failed. Retrying in {wait_time} seconds. Error: {e}")
+                        await asyncio.sleep(wait_time)
+                    else:
+                        self.logger.error(f"Error translating with key {api_key[:5]}...: {e}\n Input Text: {text}")
+                        return self.placeholder_error_text
+            
         return _rate_limited_translate
     
     async def translate_text(self, text: str, language: str, api_key: str, system_prompt: str = None) -> str:
@@ -80,7 +82,7 @@ class SimpleCohereTranslator:
         return await self.rate_limited_translate(text, language, api_key, system_prompt)
     
     async def translate_batch(self, texts: List[str], language: str, system_prompt: str = None) -> List[str]:
-        """Translate a batch of texts distributing across available API keys."""
+        """Translate a batch of texts distributing across available API keys with concurrency control."""
         results = [None] * len(texts)
         
         # Distribute texts among API keys
@@ -92,31 +94,42 @@ class SimpleCohereTranslator:
                 key_distribution[key] = []
             key_distribution[key].append((i, text))
         
-        # Process texts for each key
+        # Process texts for each key with concurrency control
         tasks = []
+        semaphores = {key: asyncio.Semaphore(8) for key in self.api_keys}  # 8 concurrent requests per key
+        
         for key, text_pairs in key_distribution.items():
             for idx, text in text_pairs:
-                task = asyncio.create_task(self.translate_text(
-                    text, language, key, system_prompt
+                task = asyncio.create_task(self._process_with_concurrency(
+                    semaphores[key], text, language, key, system_prompt, idx
                 ))
-                tasks.append((idx, task))
+                tasks.append(task)
         
         # Wait for all tasks and collect results
-        for idx, task in tasks:
-            try:
-                results[idx] = await task
-            except Exception as e:
-                self.logger.error(f"Failed to translate text at index {idx}: {e}")
-                results[idx] = texts[idx]  # Use original on error
+        results_list = await asyncio.gather(*tasks)
+        
+        # Organize results using the returned indices
+        for idx, result in results_list:
+            results[idx] = result
         
         return results
     
+    async def _process_with_concurrency(self, semaphore, text, language, key, system_prompt, idx):
+        """Process a single text with concurrency control."""
+        async with semaphore:
+            try:
+                translated = await self.translate_text(text, language, key, system_prompt)
+                return (idx, translated)
+            except Exception as e:
+                self.logger.error(f"Failed to translate text at index {idx}: {e}")
+                return (idx, self.placeholder_error_text)
+
     async def process_in_batches(self, all_texts: List[str], language: str, 
-                                 system_prompt: str = None, batch_size: int = None) -> List[str]:
-        """Process all texts in controlled batch sizes with rate limiting."""
-        # If batch_size is not specified, use the rate limit as the batch size
+                               system_prompt: str = None, batch_size: int = None) -> List[str]:
+        # If batch_size is not specified, use 80% of rate limit
         if batch_size is None:
-            batch_size = self.rate_limit
+            batch_size = int(self.rate_limit * 0.8)  # Added safety margin
+            self.logger.info(f"Using adaptive batch size: {batch_size} texts/batch")
         
         all_results = []
         
@@ -145,7 +158,6 @@ class SimpleCohereTranslator:
                 await asyncio.sleep(2)  # Small buffer between batches
         
         return all_results
-
 
 class SimpleCohereTranslationManager:
     """Manager for translating dataset entries using the simplified Cohere translator."""
@@ -391,9 +403,6 @@ class SimpleCohereTranslationManager:
         Returns:
             Whether the translation was successful
         """
-        from utils.data_loader import save_batch_to_json, save_progress_state
-        from utils.prompt_templates import get_prompt_for_language
-        
         prompt_template = get_prompt_for_language(language)
         success = True
         
