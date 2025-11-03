@@ -1,0 +1,89 @@
+# Refine-Pipeline Configuration File
+# This file contains all configuration parameters
+
+# Data Configuration
+data:
+  # Directory containing the JSONL metadata files
+  metadata_dir: "metadata"
+  # Individual JSONL file names
+  files:
+    depth_metadata: "depth_maps_metadata.jsonl"
+    object_descriptions: "obj_extr_from_desc.jsonl" 
+    foreground_annotations: "fg_anno.jsonl"
+  # Processing limits
+  max_images: null  # null means process all images, set integer to limit
+  # Only process images present in ALL JSONL files
+  require_all_metadata: true
+
+# API Configuration
+api:
+  base_url: "http://127.0.0.1:11434/v1"
+  api_key: "None"
+  model: "Qwen/Qwen3-1.7B"
+  timeout_seconds: 30.0
+  max_retries: 3
+
+# Generation Parameters
+generation:
+  temperature: 0.0
+  max_tokens: 8192
+  top_p: 0.8
+  presence_penalty: 1.5
+  top_k: 20
+
+# Processing Configuration
+processing:
+  # Number of worker processes (null = CPU count)
+  num_workers: null
+  # Batch size for processing
+  batch_size: 50
+  # Save results every N processed items
+  save_frequency: 100
+
+# Prompt Distribution Configuration
+# Each image gets exactly ONE prompt based on percentage distribution
+prompts:
+  # Total prompts per dataset (one per image)
+  prompts_per_image: 1
+  # Percentage distribution across prompt categories (must sum to 100)
+  distribution:
+    scene_understanding: 12      # 12% of images get scene understanding prompts
+    observational_analytical: 12 # 12% get observational prompts
+    atmospheric_sensory: 11      # 11% get atmospheric prompts
+    narrative_contextual: 11     # 11% get narrative prompts
+    spatial_relational: 11       # 11% get spatial prompts
+    functional_purpose: 11       # 11% get functional prompts
+    comparative_detailed: 11     # 11% get comparative prompts
+    perspective_experience: 11   # 11% get perspective prompts
+    comprehensive_analysis: 10   # 10% get comprehensive analysis prompts
+  # Shuffle the dataset before assigning prompts for randomization
+  shuffle_dataset: true
+  # Random seed for reproducible prompt assignment (null for random)
+  random_seed: 42
+
+# Output Configuration
+output:
+  # Output file for generated responses
+  output_file: "generated_responses.jsonl"
+  # Include metadata in output
+  include_metadata: true
+  # Include prompt category in output
+  include_prompt_category: true
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+  # Log processing statistics
+  show_progress: true
+  # Progress update frequency (every N processed items)
+  progress_frequency: 50
+
+# Development/Testing Configuration
+development:
+  # Run in sample mode for testing
+  sample_mode: false
+  # Number of images to process in sample mode
+  sample_size: 5
+  # Enable debug output
+  debug: false
